@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>내 캘린더</title>
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
+    <link rel="stylesheet" href="/css/style.css">
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+</head>
+<body>
+<h1>내 캘린더 이벤트</h1>
+<div id='calendar'></div>
+<form action="/addTestEvent" method="post">
+    <button type="submit">테스트 이벤트 추가</button>
+</form>
+<script th:inline="javascript">
+    /*<![CDATA[*/
+    var events = /*[[${events}]]*/ [];
+    var calendarEl = document.getElementById('calendar');
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        height: 650,
+        events: events,
+
+        dayCellClassNames: function(arg) {
+            if (arg.date.getDay() === 0) { // 일요일
+                return ['sunday'];
+            } else if (arg.date.getDay() === 6) { // 토요일
+                return ['saturday'];
+            }
+            return [];
+        }
+    });
+    calendar.render();
+    /*]]>*/
+</script>
+</body>
+</html>
