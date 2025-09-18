@@ -17,20 +17,31 @@
     /*<![CDATA[*/
     var events = /*[[${events}]]*/ [];
     var calendarEl = document.getElementById('calendar');
+
     var calendar = new FullCalendar.Calendar(calendarEl, {
         initialView: 'dayGridMonth',
         height: 650,
         events: events,
-
-        dayCellClassNames: function(arg) {
-            if (arg.date.getDay() === 0) { // 일요일
-                return ['sunday'];
-            } else if (arg.date.getDay() === 6) { // 토요일
-                return ['saturday'];
+        eventClick: function(info) {
+            if (confirm('정말 이 이벤트를 삭제하시겠습니까?')) {
+                fetch('/deleteEvent', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ eventId: info.event.id })
+                }).then(response => {
+                    if (response.ok) {
+                        info.event.remove(); // 화면에서도 삭제
+                        alert('이벤트가 삭제되었습니다.');
+                    } else {
+                        alert('삭제 실패: 서버 오류');
+                    }
+                });
             }
-            return [];
         }
     });
+
     calendar.render();
     /*]]>*/
 </script>

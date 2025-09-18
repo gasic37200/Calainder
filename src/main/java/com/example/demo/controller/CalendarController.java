@@ -4,11 +4,12 @@ import com.example.demo.service.CalendarService;
 import com.google.api.services.calendar.model.Event;
 import com.google.api.services.calendar.model.EventDateTime;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.stereotype.Service;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,12 +45,14 @@ public class CalendarController {
                 if (event.getStart() != null && event.getStart().getDateTime() != null) {
                     // 시간 기반 이벤트
                     eventsList.add(Map.of(
+                            "id", event.getId(),
                             "title", event.getSummary(),
                             "start", event.getStart().getDateTime().toStringRfc3339()
                     ));
                 } else if (event.getStart() != null && event.getStart().getDate() != null) {
                     // 하루짜리 일정
                     eventsList.add(Map.of(
+                            "id", event.getId(),
                             "title", event.getSummary(),
                             "start", event.getStart().getDate().toString()
                     ));
@@ -85,4 +88,19 @@ public class CalendarController {
         return "redirect:/calendar"; // 다시 달력 화면으로
     }
 
+    @PostMapping("/deleteEvent")
+    @ResponseBody
+    public ResponseEntity<String> deleteEvent(@RequestBody Map<String, String> payload) {
+        try {
+            String eventId = payload.get("eventId");
+            calendarService.getCalendarService()
+                    .events()
+                    .delete("primary", eventId)
+                    .execute();
+            return ResponseEntity.ok("삭제 성공");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("삭제 실패");
+        }
+    }
 }
