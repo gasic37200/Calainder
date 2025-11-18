@@ -1,79 +1,82 @@
 package com.example.demo.service;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleAuthorizationCodeFlow;
-import com.google.api.client.googleapis.auth.oauth2.GoogleClientSecrets;
+import com.example.demo.dto.EventRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
-import com.google.api.client.extensions.java6.auth.oauth2.AuthorizationCodeInstalledApp;
-import com.google.api.client.extensions.jetty.auth.oauth2.LocalServerReceiver;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
-import com.google.api.client.util.store.FileDataStoreFactory;
+import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
-import com.google.api.services.calendar.CalendarScopes;
+import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.EventDateTime;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
-import java.io.InputStreamReader;
-import java.util.Collections;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.List;
 
 @Service
 public class CalendarService {
 
-    private static final String APPLICATION_NAME = "My Calendar App";
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-    private static final String TOKENS_DIRECTORY_PATH = "tokens"; // 프로젝트 폴더 내 저장
 
-    public Calendar getCalendarService() throws Exception {
-        // HTTP 통신용 Transport 생성
+    private final OAuth2AuthorizedClientService authorizedClientService;
+
+    public CalendarService(OAuth2AuthorizedClientService authorizedClientService) {
+        this.authorizedClientService = authorizedClientService;
+    }
+
+    // Google Calendar API 클라이언트 생성
+    public Calendar getCalendarService(OAuth2AuthorizedClient authorizedClient) throws Exception {
         var httpTransport = GoogleNetHttpTransport.newTrustedTransport();
 
-        // JSON 처리용 Factory
-        var jsonFactory = GsonFactory.getDefaultInstance();
-
-        // credentials.json 읽기
-        var in = getClass().getResourceAsStream("/credentials.json");
-        var clientSecrets = GoogleClientSecrets.load(JSON_FACTORY, new InputStreamReader(in));
-
-        // 토큰 저장 위치 지정
-        var dataStoreFactory = new FileDataStoreFactory(new File(TOKENS_DIRECTORY_PATH));
-
-        // OAuth 인증 설정
-        var flow = new GoogleAuthorizationCodeFlow.Builder(
-                httpTransport,
-                JSON_FACTORY,
-                clientSecrets,
-                Collections.singleton(CalendarScopes.CALENDAR))
-                .setDataStoreFactory(dataStoreFactory)
-                .setAccessType("offline")
-                .build();
-
-        // 로컬 서버로 OAuth 인증 코드 받기
-        var receiver = new LocalServerReceiver.Builder()
-                .setPort(8888)  // 포트 고정
-                .setCallbackPath("/Callback")
-                .build();
-
-        // OAuth 인증 수행
-        var credential = new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
-
-        // Calendar 서비스 객체 생성
-        return new Calendar.Builder(httpTransport, JSON_FACTORY, credential)
-                .setApplicationName(APPLICATION_NAME)
+        return new Calendar.Builder(httpTransport, JSON_FACTORY, request -> {
+            request.getHeaders().setAuthorization("Bearer " + authorizedClient.getAccessToken().getTokenValue());
+        })
+                .setApplicationName("My Calendar App")
                 .build();
     }
 
-    /**
-     * 테스트용 main 메서드
-     * Google Calendar에 있는 기본 이벤트 출력
-     */
-    public static void main(String[] args) throws Exception {
-        CalendarService service = new CalendarService();
-        Calendar calendar = service.getCalendarService();
+    // 일정 생성
+    public Event createEvent(EventRequest req, OAuth2AuthorizedClient authorizedClient) throws Exception {
+        Calendar service = getCalendarService(authorizedClient);
 
-        var events = calendar.events().list("primary").execute();
-        System.out.println("=== 내 기본 캘린더 이벤트 ===");
-        for (var event : events.getItems()) {
-            System.out.println(event.getSummary());
-        }
+        LocalDateTime start = LocalDateTime.parse(req.getStartDate() + "T" + req.getStartTime());
+        LocalDateTime end = LocalDateTime.parse(req.getEndDate() + "T" + req.getEndTime());
+
+        ZonedDateTime zStart = start.atZone(ZoneId.of("Asia/Seoul"));
+        ZonedDateTime zEnd = end.atZone(ZoneId.of("Asia/Seoul"));
+
+        Event event = new Event().setSummary(req.getTitle());
+        event.setStart(new EventDateTime().setDateTime(new DateTime(zStart.toInstant().toEpochMilli())).setTimeZone("Asia/Seoul"));
+        event.setEnd(new EventDateTime().setDateTime(new DateTime(zEnd.toInstant().toEpochMilli())).setTimeZone("Asia/Seoul"));
+
+        return service.events().insert("primary", event).execute();
+    }
+
+    // 일정 수정
+    public Event updateEvent(EventRequest req, OAuth2AuthorizedClient authorizedClient) throws Exception {
+        Calendar service = getCalendarService(authorizedClient);
+        Event existing = service.events().get("primary", req.getId()).execute();
+
+        existing.setSummary(req.getTitle());
+        LocalDateTime start = LocalDateTime.parse(req.getStartDate() + "T" + req.getStartTime());
+        LocalDateTime end = LocalDateTime.parse(req.getEndDate() + "T" + req.getEndTime());
+
+        ZonedDateTime zStart = start.atZone(ZoneId.of("Asia/Seoul"));
+        ZonedDateTime zEnd = end.atZone(ZoneId.of("Asia/Seoul"));
+
+        existing.setStart(new EventDateTime().setDateTime(new DateTime(zStart.toInstant().toEpochMilli())).setTimeZone("Asia/Seoul"));
+        existing.setEnd(new EventDateTime().setDateTime(new DateTime(zEnd.toInstant().toEpochMilli())).setTimeZone("Asia/Seoul"));
+
+        return service.events().update("primary", existing.getId(), existing).execute();
+    }
+
+    // 일정 삭제
+    public void deleteEvent(String eventId, OAuth2AuthorizedClient authorizedClient) throws Exception {
+        Calendar service = getCalendarService(authorizedClient);
+        service.events().delete("primary", eventId).execute();
     }
 }

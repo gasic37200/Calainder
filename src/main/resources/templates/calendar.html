@@ -1,49 +1,57 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html>
 <head>
     <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
     <title>내 캘린더</title>
-    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.css' rel='stylesheet' />
     <link rel="stylesheet" href="/css/style.css">
-    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+    <!-- FullCalendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+
 </head>
 <body>
 <h1>내 캘린더 이벤트</h1>
+<!-- 이미지 업로드 버튼과 모달 -->
+<button id="uploadImageBtn">일정 이미지 업로드</button>
+<input type="file" id="imageInput" accept="image/*" style="display:none" />
+
 <div id='calendar'></div>
-<form action="/addTestEvent" method="post">
-    <button type="submit">테스트 이벤트 추가</button>
-</form>
-<script th:inline="javascript">
-    /*<![CDATA[*/
-    var events = /*[[${events}]]*/ [];
-    var calendarEl = document.getElementById('calendar');
 
-    var calendar = new FullCalendar.Calendar(calendarEl, {
-        initialView: 'dayGridMonth',
-        height: 650,
-        events: events,
-        eventClick: function(info) {
-            if (confirm('정말 이 이벤트를 삭제하시겠습니까?')) {
-                fetch('/deleteEvent', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ eventId: info.event.id })
-                }).then(response => {
-                    if (response.ok) {
-                        info.event.remove(); // 화면에서도 삭제
-                        alert('이벤트가 삭제되었습니다.');
-                    } else {
-                        alert('삭제 실패: 서버 오류');
-                    }
-                });
-            }
-        }
-    });
+<div id="modalBackdrop"></div>
+<div id="eventModal">
+    <h3 id="modalDate"></h3>
+    <ul id="eventList"></ul>
+    <button type="button" id="addEventButton">일정 추가</button>
+    <button type="button" id="closeModal">✖</button>
+</div>
+<!-- 일정 추가 모달 -->
+<div id="addEventModal">
+    <div class="modal-header">
+        <h3 id="addEventFormTitle">일정 추가</h3>
+        <button id="closeAddModal">✖</button>
+    </div>
+    <form id="addEventForm">
+        <label for="eventTitle">제목:</label>
+        <input type="text" id="eventTitle" required>
 
-    calendar.render();
-    /*]]>*/
-</script>
+        <label for="eventStartDate">시작 날짜:</label>
+        <input type="date" id="eventStartDate" readonly>
+
+        <label for="eventEndDate">끝 날짜:</label>
+        <input type="date" id="eventEndDate" required>
+
+        <label for="eventStartTime">시작 시간:</label>
+        <input type="time" id="eventStartTime" required>
+
+        <label for="eventEndTime">끝 시간:</label>
+        <input type="time" id="eventEndTime" required>
+
+        <div class="form-buttons">
+            <button type="submit">추가</button>
+        </div>
+    </form>
+</div>
+<script src="/js/calendar.js"></script>
 </body>
 </html>
