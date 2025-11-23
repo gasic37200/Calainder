@@ -1,8 +1,9 @@
-package com.example.demo.controller;
+package com.calainder.server.controller;
 
-import com.example.demo.dto.EventRequest;
-import com.example.demo.service.CalendarService;
+import com.calainder.server.dto.EventRequest;
+import com.calainder.server.service.CalendarService;
 import com.google.api.services.calendar.model.Event;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
@@ -13,15 +14,11 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
 
+@RequiredArgsConstructor
 @Controller
 public class CalendarController {
 
     private final CalendarService calendarService;
-
-    @Autowired
-    public CalendarController(CalendarService calendarService) {
-        this.calendarService = calendarService;
-    }
 
     @GetMapping("/calendar")
     public String getCalendar(Model model,

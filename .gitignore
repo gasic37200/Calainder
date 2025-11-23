@@ -49,7 +49,7 @@ target/
 
 ### Sensitive files ###
 src/main/resources/credentials.json
-application.properties
+application.yml
 tokens/StoredCredential
 .env
 

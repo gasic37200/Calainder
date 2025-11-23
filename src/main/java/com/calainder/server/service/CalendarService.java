@@ -1,6 +1,6 @@
-package com.example.demo.service;
+package com.calainder.server.service;
 
-import com.example.demo.dto.EventRequest;
+import com.calainder.server.dto.EventRequest;
 import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.util.List;
 
 @Service
 public class CalendarService {
