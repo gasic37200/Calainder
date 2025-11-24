@@ -201,6 +201,9 @@ function editEvent(eventId) {
 document.getElementById("addEventForm").addEventListener("submit", async function(e) {
     e.preventDefault();
 
+    const submitBtn = document.querySelector("#addEventForm button[type='submit']");
+    submitBtn.disabled = true;
+
     const payload = {
         title: document.getElementById("eventTitle").value,
         startDate: document.getElementById("eventStartDate").value,
@@ -264,7 +267,10 @@ document.getElementById("addEventForm").addEventListener("submit", async functio
                     }, 50);
                 }
             })
-            .catch(err => console.error("AJAX 실패:", err));
+            .catch(err => console.error("AJAX 실패:", err))
+            .finally(() => {
+                submitBtn.disabled = false;  // <-- 버튼 다시 활성화
+            });
     } else {
         fetch("/addEvent", {
             method: "POST",
@@ -288,6 +294,9 @@ document.getElementById("addEventForm").addEventListener("submit", async functio
                 resetAddEventForm();
                 setTimeout(() => openEventModal(selectedDate), 50);
             })
-            .catch(err => console.error("AJAX 실패:", err));
+            .catch(err => console.error("AJAX 실패:", err))
+            .finally(() => {
+                submitBtn.disabled = false;  // <-- 버튼 다시 활성화
+            });
     }
 });
