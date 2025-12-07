@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+<div>
+    <textarea id="prompt" placeholder="사진이나 텍스트를 입력하세요."></textarea>
+
+    <!-- 이미지 업로드 -->
+    <input type="file" id="imageInput" accept="image/*">
+
+    <button onclick="callAiChat()">전송</button>
+</div>
+<form class="crawling">
+    <label for="id">학번</label>
+    <input id="id" type="text" placeholder="아이디를 입력하세요.">
+
+    <label for="pw">비밀번호</label>
+    <input id="pw" type="password" placeholder="비밀번호를 입력하세요.">
+
+    <button class="btn-login">로그인</button>
+</form>
+
+<script src="/js/index.js"></script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+### 환경 변수 ###
+.env
+**/.env
+
+### Python ###
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.log
+
+### Spring Boot ###
+target/
+*.jar
+*.war
+.gradle/
+build/
+
+### Spring 민감 정보 (경로 수정!) ###
+**/application.yml
+**/application-*.yml
+!**/application.yml.example
+**/credentials.json
+tokens/
+
+### IDE ###
+.idea/
+*.iml
+.vscode/
+
+### OS ###
+.DS_Store
+Thumbs.db

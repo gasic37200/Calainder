@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="_csrf" th:content="${_csrf.token}">
+    <meta name="_csrf_header" th:content="${_csrf.headerName}">
+    <title>내 캘린더</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <!-- FullCalendar JS -->
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.19/index.global.min.js"></script>
+
+</head>
+<body>
+<h1>내 캘린더 이벤트</h1>
+<!-- 이미지 업로드 버튼과 모달 -->
+<button id="uploadImageBtn">일정 이미지 업로드</button>
+<input type="file" id="imageInput" accept="image/*" style="display:none" />
+
+<div id='calendar'></div>
+
+<div id="modalBackdrop"></div>
+<div id="eventModal">
+    <h3 id="modalDate"></h3>
+    <ul id="eventList"></ul>
+    <button type="button" id="addEventButton">일정 추가</button>
+    <button type="button" id="closeModal">✖</button>
+</div>
+<!-- 일정 추가 모달 -->
+<div id="addEventModal">
+    <div class="modal-header">
+        <h3 id="addEventFormTitle">일정 추가</h3>
+        <button id="closeAddModal">✖</button>
+    </div>
+    <form id="addEventForm">
+        <label for="eventTitle">제목:</label>
+        <input type="text" id="eventTitle" required>
+
+        <label for="eventStartDate">시작 날짜:</label>
+        <input type="date" id="eventStartDate" readonly>
+
+        <label for="eventEndDate">끝 날짜:</label>
+        <input type="date" id="eventEndDate" required>
+
+        <label for="eventStartTime">시작 시간:</label>
+        <input type="time" id="eventStartTime" required>
+
+        <label for="eventEndTime">끝 시간:</label>
+        <input type="time" id="eventEndTime" required>
+
+        <div class="form-buttons">
+            <button type="submit">추가</button>
+        </div>
+    </form>
+</div>
+<script src="/js/calendar.js"></script>
+</body>
+</html>

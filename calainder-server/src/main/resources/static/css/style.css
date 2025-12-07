@@ -1,0 +1,195 @@
+/* ----------------- 캘린더 스타일 ----------------- */
+.fc-col-header-cell.fc-day-sat,
+.fc-day-sat .fc-daygrid-day-number {
+    color: blue;
+}
+
+.fc-col-header-cell.fc-day-sun,
+.fc-day-sun .fc-daygrid-day-number {
+    color: red;
+}
+
+/* ----------------- 모달 공통 ----------------- */
+#modalBackdrop,
+#eventModal,
+#addEventModal {
+    display: none;
+}
+
+/* 모달 배경 */
+#modalBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+}
+
+/* 세부 모달 */
+#eventModal {
+    position: fixed;
+    top: 30%;
+    left: 50%;
+    transform: translate(-50%, -30%);
+    background: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    width: 400px;
+    z-index: 1010;
+}
+
+#eventModal h3 {
+    margin-top: 0;
+    text-align: center;
+}
+
+#eventList {
+    text-align: left;
+    padding-left: 0;
+    list-style: none;
+}
+
+#closeModal {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-size: 16px;
+}
+
+#addEventButton {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+}
+
+/* 일정 추가 모달 */
+#addEventModal {
+    display: none;
+    position: fixed;
+    top: 20%;
+    left: 50%;
+    transform: translate(-50%, -20%);
+    background: white;
+    padding: 20px;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    width: 400px;
+    min-height: 450px;
+    z-index: 1020;
+    flex-direction: column;
+}
+
+#addEventModal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+#addEventModal .modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+}
+
+#addEventModal .modal-header button {
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+#addEventForm {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+#addEventForm label {
+    font-weight: bold;
+}
+
+#addEventForm input {
+    padding: 6px 8px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+#addEventForm .form-buttons {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* ----------------- 멀티데이 & 하루 이벤트 스타일 ----------------- */
+/* 모든 이벤트 기본 */
+.fc .fc-daygrid-event {
+    background-color: #3788d8 !important;
+    color: white !important;
+    border: none !important;
+    display: block !important;
+}
+
+/* span 텍스트 기본 숨김 */
+.fc .fc-event-main > span {
+    visibility: hidden;
+}
+
+/* 하루짜리 이벤트 (start + end 동일) */
+.fc .fc-event.fc-event-start.fc-event-end .fc-event-main > span {
+    visibility: visible !important;
+    color: white !important;
+}
+
+/* 멀티데이 이벤트 시작일 */
+.fc .fc-event.fc-event-start:not(.fc-event-end) .fc-event-main > span {
+    visibility: visible !important;
+    color: white !important;
+}
+
+/* 멀티데이 이벤트 끝 세그먼트: 오른쪽 둥글게, 텍스트 숨김 */
+.fc .fc-event.fc-event-end:not(.fc-event-start) .fc-event-main > span {
+    visibility: hidden;
+    border-radius: 0 4px 4px 0;
+}
+
+/* 이어지는 날: 텍스트 숨기고 막대 유지 */
+.fc .fc-event:not(.fc-event-start):not(.fc-event-end) .fc-event-main {
+    height: 100% !important;
+    display: block;
+    background-color: #3788d8 !important;
+    border-radius: 0;
+}
+
+/* ------------------- 세부 모달 이벤트 리스트 ------------------- */
+.eventItem {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    padding: 4px 0;
+}
+
+.eventTime {
+    flex: 2;
+    text-align: left;
+}
+
+.eventTitle {
+    flex: 3;
+    text-align: center;
+}
+
+.editEventBtn {
+    flex: 1;
+    padding: 2px 6px;
+    font-size: 12px;
+    cursor: pointer;
+}
