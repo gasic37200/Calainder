@@ -50,6 +50,7 @@ public class ScheduleDTO {
 	public Event toGoogleEvent() {
 		Event event = new Event();
 
+		event.setId(this.getId());
 		event.setSummary(this.getTitle());
 		event.setDescription(this.getDescription());
 		event.setLocation(this.getLocation());

@@ -59,33 +59,47 @@ async def crawl_schedule(
             await plus_btn.first.click()
         await page.wait_for_timeout(1000)
 
-        events = page.locator("a[href^='javascript:fnChangeStrToLink']")
+        events = page.locator(
+            ".tui-full-calendar-weekday-schedule a[href^='javascript:fnChangeStrToLink']"
+        )
         total = await events.count()
+        print(total)
 
         today = datetime.today().strftime("%Y-%m-%d")
 
         results = []
 
         for i in range(total):
-            print(i)
+            print(f"이벤트 {i+1} 처리 중")
             ev = events.nth(i)
-
-            # 스크롤 후 클릭
             await ev.scroll_into_view_if_needed()
-            await ev.click(force=True)
 
-            plus_btn = page.locator("span.tui-full-calendar-weekday-exceed-in-week")
-            print(await plus_btn.count())
-            if await plus_btn.count() > 0:
-                print("더보기")
-                await plus_btn.first.click()
-                await page.wait_for_timeout(1000)
+            # info-item-box가 스크롤링 후 안정화될 때까지 잠시 대기
+            await page.wait_for_timeout(300)
+
+            try:
+                # 3. 안정화된 후 클릭 재시도
+                await ev.click(timeout=10000)
+
+            except TimeoutError as e:
+                print(f"클릭 타임아웃 발생 후 JS 강제 클릭 시도: {e}")
+                # 4. (최후의 수단) Playwright 클릭이 실패했을 경우, JavaScript를 주입하여 강제로 클릭 이벤트 발생
+                try:
+                    await ev.evaluate('element => element.click()')
+                    print("-> JavaScript를 이용한 클릭 성공")
+                except Exception as js_err:
+                    print(f"-> JavaScript 강제 클릭도 실패: {js_err}")
+                    # 이 시점에선 팝업이 열리지 않았을 것이므로 다음 루프로 이동합니다.
+                    continue
+
+            # 2. 팝업이 로드될 때까지 명시적으로 대기
+            await page.wait_for_selector(".tui-full-calendar-popup-detail", state='visible')
 
             title = await page.locator("span.tui-full-calendar-schedule-title a").inner_text()
             duration = await page.locator("div.tui-full-calendar-popup-detail-date.tui-full-calendar-content").inner_text()
             sub = await page.locator("span.tui-full-calendar-content").inner_text()
 
-            if parse_duration(duration)[2] <= today:
+            if parse_duration(duration)[2] < today:
                 continue
 
             start_date, start_time = parse_duration(duration)[0], parse_duration(duration)[1]
@@ -104,11 +118,17 @@ async def crawl_schedule(
                 }
             })
 
-        if results is None:
-            return { "error_text": "일정이 없습니다." }
+            print(f"{i+1} 안전 영역(학습일정 제목) 클릭하여 팝업 닫기 시도")
+            await page.click('h2:has-text("학습일정")')
 
-        print(results)
-        return results
+            # 팝업이 사라지는 것을 확인하거나 잠시 대기
+            await page.wait_for_selector(".tui-full-calendar-popup-detail", state='hidden')
+
+    if results is None:
+        return { "error_text": "일정이 없습니다." }
+
+    print(results)
+    return results
 
 import re
 

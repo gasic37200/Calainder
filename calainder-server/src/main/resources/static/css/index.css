@@ -1,0 +1,298 @@
+/* Base */
+body {
+    margin: 0;
+    font-family: Pretendard, Inter, sans-serif;
+    background: #f5f6f7;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+/* ---------- Landing ---------- */
+.landing {
+    position: absolute;
+    inset: 0;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    z-index: 10;
+    transition: transform 0.6s ease, opacity 0.6s ease;
+}
+.landing h1 { font-size: 40px; margin-bottom: 20px; font-weight: 700; }
+.landing p { font-size: 18px; color:#555; margin-bottom:40px; line-height:1.5; }
+.landing-arrow { font-size:40px; cursor:pointer; transition:.3s; }
+.landing-arrow:hover { transform: translateY(-6px); }
+.hide { transform: translateY(100%); opacity: 0; pointer-events:none; }
+
+/* Navigation */
+.nav {
+    background: white;
+    padding: 14px 20px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+    font-weight: 600;
+    z-index: 1;
+}
+
+/* Chat Container */
+.container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Messages */
+.msg {
+    max-width: 70%;
+    padding: 14px 18px;
+    border-radius: 16px;
+    font-size: 15px;
+    line-height: 1.5;
+    animation: fadeIn .2s ease-out;
+}
+.msg.ai { background:#f1f1f1; align-self:flex-start; }
+.msg.user { background:#cbe1ff; align-self:flex-end; }
+.msg.image {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+/* Event Card */
+.event-card {
+    background:white;
+    padding:20px;
+    border-radius:16px;
+    box-shadow:0 2px 8px rgba(0,0,0,0.08);
+    animation: fadeInUp .25s ease-out;
+}
+.event-card h3 { margin:0 0 10px; font-size:18px; color:#2b7a2f; }
+.event-card p { margin: 6px 0; }
+.btn-view, .btn-edit {
+    margin-top: 10px;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-size: 14px;
+    border: none;
+    cursor: pointer;
+}
+.btn-view { background:#4285f4; color:white; }
+.btn-edit { background:#ffa000; color:white; margin-left:8px; }
+
+/* Prompt Box */
+.prompt-box {
+    background: white;
+    padding: 14px;
+    display: flex;
+    gap: 10px;
+    box-shadow: 0 -2px 8px rgba(0,0,0,0.08);
+}
+textarea {
+    flex: 1;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    resize: none;
+    font-size: 14px;
+}
+button { border:none; cursor:pointer; }
+
+.clip-btn {
+    background:white;
+    border:1px solid #ccc;
+    border-radius:10px;
+    width:62px; height:62px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:20px; cursor:pointer;
+}
+.clip-btn:hover { background:#f0f0f0; }
+
+/* Toast */
+.toast {
+    position:fixed; top:20px; right:20px;
+    background:#2b7a2f; color:white;
+    padding:12px 16px;
+    border-radius:10px;
+    opacity:0; pointer-events:none;
+    transition:.25s; z-index:200;
+}
+.toast.show { opacity:1; }
+
+/* Animations */
+@keyframes fadeIn { from{opacity:0;} to{opacity:1;} }
+@keyframes fadeInUp { from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+/* =====================================================
+                ✨ MODAL REFINED STYLE
+===================================================== */
+
+#editModal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.15);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes pop {
+    0% { transform:translate(-50%, -50%) scale(0.87); opacity:0; }
+    100% { transform:translate(-50%, -50%) scale(1); opacity:1; }
+}
+
+#editModal h3 {
+    font-size: 21px;
+    font-weight: 700;
+    margin-bottom: 18px;
+}
+
+#editModal label {
+    font-size: 13px;
+    font-weight: 600;
+    margin-top: 8px;
+    display: block;
+}
+
+#editModal input {
+    width: 100%;
+    margin-top: 4px;
+    padding: 8px 10px;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    transition: .2s ease;
+}
+#editModal input:focus {
+    border-color: #4285f4;
+    box-shadow: 0 0 0 2px rgba(66,133,244,0.2);
+}
+
+/* Modal Buttons */
+.modal-buttons {
+    display:flex; justify-content:space-between;
+    margin-top:20px;
+}
+.modal-btn {
+    padding: 8px 18px;
+    border-radius: 6px;
+    border:none;
+    font-size:14px;
+    cursor:pointer;
+    font-weight:600;
+}
+.modal-btn.cancel { background:#dedede; }
+.modal-btn.save { background:#4285f4; color:white; }
+
+/* =======================
+      Edit Modal
+======================= */
+/* 🔹 MODAL OVERLAY */
+#editModal.modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(2px);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}
+
+/*#editModal.show { display:flex; opacity:1; }*/
+/*#editModal.hide { opacity:0; pointer-events:none; }*/
+
+/* 🔹 MODAL WINDOW */
+.modal-window {
+    background: white;
+    width: 420px;
+    padding: 24px 30px;
+    border-radius: 14px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.22);
+    animation: popUp 0.25s ease-out;
+}
+@keyframes popUp {
+    0% { transform: scale(0.85); opacity:0; }
+    100% { transform: scale(1); opacity:1; }
+}
+
+
+.modal-window h2 {
+    margin-top: 0;
+    font-size: 21px;
+    font-weight: 700;
+    margin-bottom: 15px;
+}
+
+/* Inputs */
+.modal-window label {
+    font-size: 13px;
+    font-weight: 600;
+    display: block;
+    margin-top: 10px;
+}
+
+.modal-window input {
+    width: 100%;
+    padding: 9px;
+    font-size: 14px;
+    margin-top: 3px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    outline: none;
+    transition: border 0.2s ease;
+}
+
+.modal-window input:focus {
+    border-color: #4285F4;
+    box-shadow: 0 0 0 2px rgba(66,133,244,0.15);
+}
+
+/* Buttons */
+.modal-buttons {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 20px;
+}
+
+.modal-btn {
+    padding: 8px 20px;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.modal-btn.cancel {
+    background: #ebebeb;
+}
+
+.modal-btn.save {
+    background: #4285F4;
+    color: white;
+}
+
+#loginModal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    backdrop-filter: blur(2px);
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    transition: opacity 0.3s ease;
+}

@@ -39,7 +39,7 @@ public class CrawlController {
 		ScheduleDTO[] scheduleDTO = fastApiService.callFastApi(data);
 
 		for (ScheduleDTO schedule : scheduleDTO) {
-			boolean result = calendarService.addEvent(schedule, authorizedClient);
+			ScheduleDTO result = calendarService.addEvent(schedule, authorizedClient);
 			System.out.println(result);
 		}
 

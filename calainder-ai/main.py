@@ -8,13 +8,12 @@ import json
 
 load_dotenv(override=True)  # .env 읽어오기
 
-print("ENV KEY:", os.getenv("OPENAI_API_KEY"))
-
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = FastAPI()
 
 today = datetime.now().date()
+createId = datetime.now().strftime("%Y%m%d%H%M%S%f")
 developer_text = f"""
     오늘은 {today}입니다. 
     사용자의 대화 내용을 분석하여, 확정된 일정 한 개를 JSON으로 생성한다. 
@@ -31,7 +30,7 @@ developer_text = f"""
 
     JSON 구조는 반드시 다음과 같다: 
     {{ 
-      id: evt-12345 
+      id: null
       title: 일정 제목(내용 요약) 
       description: 일정 설명 
       location: 장소 
@@ -42,6 +41,7 @@ developer_text = f"""
     }} 
 
     기본값 규칙: 
+    id: null
     location: null 
     fstart.date: {today} 
     fend.date: {today} 

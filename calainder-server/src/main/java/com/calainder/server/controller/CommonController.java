@@ -12,4 +12,5 @@ public class CommonController {
 	public String prompt() {
 		return "index";
 	}
+
 }

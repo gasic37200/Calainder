@@ -20,10 +20,7 @@ import java.time.ZonedDateTime;
 @Service
 @RequiredArgsConstructor
 public class CalendarService {
-
     private static final JsonFactory JSON_FACTORY = GsonFactory.getDefaultInstance();
-
-    private final OAuth2AuthorizedClientService authorizedClientService;
 
     // Google Calendar API 클라이언트 생성
     public Calendar getCalendarService(OAuth2AuthorizedClient authorizedClient) throws Exception {
@@ -37,17 +34,17 @@ public class CalendarService {
     }
 
     // 일정 생성
-    public boolean addEvent(ScheduleDTO req, OAuth2AuthorizedClient authorizedClient) throws Exception {
+    public ScheduleDTO addEvent(ScheduleDTO req, OAuth2AuthorizedClient authorizedClient) throws Exception {
         Calendar service = getCalendarService(authorizedClient);
 
 		try {
 			Event event = req.toGoogleEvent();
-			service.events().insert("primary", event).execute();
+			Event createdEvent = service.events().insert("primary", event).execute();
 			System.out.println("성공");
-			return true;
+			return new ScheduleDTO().toScheduleDTO(createdEvent);
 		} catch (Exception e) {
 			System.out.println(e.getMessage());
-			return false;
+			return null;
 		}
 //        Event event = new Event().setSummary(req.getTitle());
 //        event.setStart(new EventDateTime().setDateTime(new DateTime(zStart.toInstant().toEpochMilli())).setTimeZone("Asia/Seoul"));
@@ -55,22 +52,18 @@ public class CalendarService {
     }
 //
 //    // 일정 수정
-    public Event updateEvent(ScheduleDTO req, OAuth2AuthorizedClient authorizedClient) throws Exception {
-//        Calendar service = getCalendarService(authorizedClient);
-//        Event existing = service.events().get("primary", req.getId()).execute();
-//
-//        existing.setSummary(req.getTitle());
-//        LocalDateTime start = LocalDateTime.parse(req.getStartDate() + "T" + req.getStartTime());
-//        LocalDateTime end = LocalDateTime.parse(req.getEndDate() + "T" + req.getEndTime());
-//
-//        ZonedDateTime zStart = start.atZone(ZoneId.of("Asia/Seoul"));
-//        ZonedDateTime zEnd = end.atZone(ZoneId.of("Asia/Seoul"));
-//
-//        existing.setStart(new EventDateTime().setDateTime(new DateTime(zStart.toInstant().toEpochMilli())).setTimeZone("Asia/Seoul"));
-//        existing.setEnd(new EventDateTime().setDateTime(new DateTime(zEnd.toInstant().toEpochMilli())).setTimeZone("Asia/Seoul"));
-//
-//        return service.events().update("primary", existing.getId(), existing).execute();
-		return Event.class.newInstance();
+    public ScheduleDTO updateEvent(ScheduleDTO req, OAuth2AuthorizedClient authorizedClient) throws Exception {
+		Calendar service = getCalendarService(authorizedClient);
+
+		try {
+			Event event = req.toGoogleEvent();
+			Event createdEvent = service.events().update("primary", event.getId(), event).execute();
+			System.out.println("성공");
+			return new ScheduleDTO().toScheduleDTO(createdEvent);
+		} catch (Exception e) {
+			System.out.println(e.getMessage());
+			return null;
+		}
     }
 //
 //    // 일정 삭제

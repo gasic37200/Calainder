@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 
 @RequiredArgsConstructor
-@Controller
+@RestController
 public class CalendarController {
 
     private final CalendarService calendarService;
@@ -56,30 +56,34 @@ public class CalendarController {
 
     @PostMapping("/addEvent")
     @ResponseBody
-    public Boolean addEvent(@RequestBody ScheduleDTO req,
+    public ScheduleDTO addEvent(@RequestBody ScheduleDTO req,
                                         @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
 		return calendarService.addEvent(req, authorizedClient);
     }
 
 
     @PostMapping("/updateEvent")
-    @ResponseBody
-    public Map<String, Object> updateEvent(@RequestBody ScheduleDTO req,
-                                           @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
+	public ScheduleDTO updateEvent(@RequestBody ScheduleDTO req,
+							   @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
+		return calendarService.updateEvent(req, authorizedClient);
+	}
+//    @ResponseBody
+//    public Map<String, Object> updateEvent(@RequestBody ScheduleDTO req,
+//                                           @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
 
-        Event event = calendarService.updateEvent(req, authorizedClient);
-
-        Map<String, Object> result = new HashMap<>();
-        result.put("id", event.getId());
-        result.put("summary", event.getSummary());
-        result.put("start", event.getStart().getDateTime() != null
-                ? event.getStart().getDateTime().toStringRfc3339()
-                : event.getStart().getDate().toString());
-        result.put("end", event.getEnd().getDateTime() != null
-                ? event.getEnd().getDateTime().toStringRfc3339()
-                : event.getEnd().getDate().toString());
-        return result;
-    }
+//        Event event = calendarService.updateEvent(req, authorizedClient);
+//
+//        Map<String, Object> result = new HashMap<>();
+//        result.put("id", event.getId());
+//        result.put("summary", event.getSummary());
+//        result.put("start", event.getStart().getDateTime() != null
+//                ? event.getStart().getDateTime().toStringRfc3339()
+//                : event.getStart().getDate().toString());
+//        result.put("end", event.getEnd().getDateTime() != null
+//                ? event.getEnd().getDateTime().toStringRfc3339()
+//                : event.getEnd().getDate().toString());
+//        return result;
+//    }
 
     @DeleteMapping("/deleteEvent/{id}")
     @ResponseBody

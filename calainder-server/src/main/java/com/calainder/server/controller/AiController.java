@@ -34,9 +34,9 @@ public class AiController {
 			throw new IllegalArgumentException("일정이 감지되지 않았습니다.");
 		}
 
-		boolean result = calendarService.addEvent(scheduleDTO, authorizedClient);
+		ScheduleDTO result = calendarService.addEvent(scheduleDTO, authorizedClient);
 		System.out.println(result);
 
-		return scheduleDTO;
+		return result;
 	}
 }

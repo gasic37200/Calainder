@@ -2,27 +2,89 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Calaindar</title>
+    <link rel="stylesheet" href="/css/index.css">
 </head>
 <body>
-<div>
-    <textarea id="prompt" placeholder="사진이나 텍스트를 입력하세요."></textarea>
 
-    <!-- 이미지 업로드 -->
-    <input type="file" id="imageInput" accept="image/*">
+<!-- Landing Page -->
+<div class="landing" id="landing">
+    <h1>Calaindar</h1>
+    <p>AI를 이용해 자연스러운 대화로<br>Google Calendar에 일정을 추가해보세요.</p>
+    <div class="landing-arrow" onclick="enterApp()">⬇</div>
+</div>
 
+<!-- Main -->
+<div class="nav">AI 일정 생성</div>
+
+<div class="container" id="chatArea">
+    <div class="msg ai">추가할 일정을 자유롭게 입력해주세요!</div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="modal-overlay">
+    <div class="modal-window">
+        <h2>일정 수정</h2>
+
+        <label>제목</label>
+        <input type="text" id="editTitle">
+
+        <label>설명</label>
+        <input type="text" id="editDescription">
+
+        <label>장소</label>
+        <input type="text" id="editLocation">
+
+        <label>시작 날짜</label>
+        <input type="date" id="editStartDate">
+
+        <label>종료 날짜</label>
+        <input type="date" id="editEndDate">
+
+        <label>시작 시간</label>
+        <input type="time" id="editStartTime">
+
+        <label>종료 시간</label>
+        <input type="time" id="editEndTime">
+
+        <div class="modal-buttons">
+            <button class="modal-btn cancel" onclick="closeEditModal()">닫기</button>
+            <button class="modal-btn save">저장</button>
+        </div>
+    </div>
+</div>
+
+<!-- login 모달 -->
+<div id="loginModal" class="modal-overlay">
+    <form class="modal-window" id="loginForm">
+        <h2>로그인</h2>
+
+        <label>학번</label>
+        <input type="text" id="loginStudentId" placeholder="예: 2025123456">
+
+        <label>비밀번호</label>
+        <input type="password" id="loginPassword" placeholder="비밀번호 입력">
+
+        <div class="modal-buttons">
+            <button class="modal-btn cancel" onclick="closeLoginModal()">닫기</button>
+            <button class="modal-btn save" >확인</button>
+        </div>
+    </form>
+</div>
+
+<div id="imagePreview" style="font-size:14px; color:#555; padding-left:5px; display:none;"></div>
+
+<div class="prompt-box">
+    <div class="clip-btn">📎</div>
+
+    <!-- 로그인 버튼 -->
+    <button onclick="openLoginModal()" style="background:#555; color:white; border-radius:10px;">로그인</button>
+
+    <textarea id="userInput" rows="2" placeholder="예: 내일 오전 10시에 팀 미팅 잡아줘"></textarea>
     <button onclick="callAiChat()">전송</button>
 </div>
-<form class="crawling">
-    <label for="id">학번</label>
-    <input id="id" type="text" placeholder="아이디를 입력하세요.">
 
-    <label for="pw">비밀번호</label>
-    <input id="pw" type="password" placeholder="비밀번호를 입력하세요.">
-
-    <button class="btn-login">로그인</button>
-</form>
-
-<script src="/js/index.js"></script>
+<div id="toast" class="toast"></div>
 </body>
+<script src="/js/index.js"></script>
 </html>
