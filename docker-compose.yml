@@ -1,1 +1,38 @@
+version: "3.9"
 
+services:
+  spring:
+    container_name: calainder-spring
+    build:
+      context: ./calainder-server
+    ports:
+      - "8080:8888"
+    env_file:
+      - .env
+    depends_on:
+      - ai
+      - crawler
+    networks:
+      - calainder-net
+
+  ai:
+    container_name: calainder-ai
+    build:
+      context: ./calainder-ai
+    ports:
+      - "8000:8000"
+    networks:
+      - calainder-net
+
+  crawler:
+    container_name: calainder-crawler
+    build:
+      context: ./calainder-crawler
+    ports:
+      - "8001:8000"
+    networks:
+      - calainder-net
+
+networks:
+  calainder-net:
+    driver: bridge
