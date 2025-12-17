@@ -1,1 +1,4 @@
-
+playwright
+requests
+pycryptodome
+python-dotenv
