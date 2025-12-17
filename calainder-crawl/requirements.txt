@@ -1,4 +1,6 @@
 playwright
 requests
+dotenv
+datetime
+fastapi
 pycryptodome
-python-dotenv
