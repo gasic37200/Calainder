@@ -1,23 +1,29 @@
 # 📅 Calainder
-> **"Record Less, Remember More"** - AI 기반 지능형 일정 관리 및 자동 동기화 서비스
+> **Record Less, Remember More** | AI 기반 일정 자동화 비서
 
-## 1. Project Overview
-일상의 다양한 정보(이미지, 텍스트)를 AI가 분석하여 일정을 자동 생성하고, 구글 캘린더 및 대학 LMS(E-Class)와 연동하여 사용자의 수동 입력 없이 일정을 관리하는 서비스입니다.
+<div align="left">
+  <img src="https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white">
+  <img src="https://img.shields.io/badge/Spring_Boot-6DB33F?style=for-the-badge&logo=spring-boot&logoColor=white">
+  <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white">
+  <img src="https://img.shields.io/badge/Playwright-2EAD33?style=for-the-badge&logo=playwright&logoColor=white">
+  <img src="https://img.shields.io/badge/OpenAI_API-412991?style=for-the-badge&logo=openai&logoColor=white">
+</div>
 
-## 2. Tech Stack & Tools
-- **Main Framework:** `Java (Spring Boot)`
-- **AI Engine:** `Python`, `OpenAI API (GPT-4)`
-- **Automation:** `Playwright (Python)`
-- **Authentication:** `OAuth 2.0 (Google Calendar API)`
+---
 
-## 3. My Role & Contributions (Team Lead)
-- **AI 스케줄링 로직 설계:** 비정형 텍스트 및 캡처 이미지에서 제목, 날짜, 시간 정보를 추출하는 **Python 기반 AI 분석 모듈**을 개발했습니다.
-- **LMS 데이터 자동화:** **Playwright**를 활용하여 대학 E-Class의 과제 마감 기한을 실시간으로 크롤링하고 시스템에 동기화하는 엔진을 구축했습니다.
-- **시스템 아키텍처 설계:** 조장으로서 **유스케이스(Usecase) 및 시퀀스 다이어그램**을 설계하여 AI 분석 결과가 서버를 거쳐 구글 캘린더로 전달되는 전체 흐름을 정의했습니다.
-- **QA 및 기능 통합:** AI 분석 실패 시 예외 처리 로직 및 API 연동 정합성 검증을 총괄했습니다.
+## 📖 Project Overview
+사용자가 올린 이미지/텍스트에서 AI가 일정을 추출하고, 대학 LMS 과제를 자동으로 수집하여 구글 캘린더에 동기화합니다.
 
-## 4. 핵심 프로세스 (Sequence Diagram)
-1. **User:** 텍스트/이미지 업로드
-2. **Spring Boot:** Python AI 모듈로 데이터 전송
-3. **AI Module:** OpenAI API 분석 후 일정(JSON) 반환
-4. **Spring Boot:** Google Calendar API 연동 및 자동 등록 완료
+## 🛠 My Core Contributions (Team Lead)
+- **[AI]** `OpenAI API` 기반 비정형 데이터 일정 분석 엔진 개발 (Python)
+- **[Automation]** `Playwright`를 활용한 E-Class 과제 정보 자동 크롤링 엔진 구축
+- **[System]** `Spring Boot` 서버 아키텍처 및 `OAuth 2.0` 구글 연동 프로세스 설계
+- **[PM]** 프로젝트 기획 총괄 및 시퀀스 다이어그램(Sequence Diagram) 수립
+
+## 🔄 핵심 프로세스
+> **AI 분석부터 캘린더 등록까지의 흐름**
+1. **Input:** 유저의 이미지 또는 텍스트 업로드
+2. **Analysis:** Python 모듈이 `GPT-4`를 통해 제목/일시/장소 JSON 파싱
+3. **Sync:** Spring Boot 서버가 구글 API를 통해 캘린더 자동 등록 및 LMS 과제 동기화
+
+---
