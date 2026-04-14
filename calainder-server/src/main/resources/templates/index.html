@@ -1,90 +1,81 @@
-<!DOCTYPE html>
-<html lang="en">
+﻿<!DOCTYPE html>
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Calaindar</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calainder</title>
     <link rel="stylesheet" href="/css/index.css">
 </head>
-<body>
 
-<!-- Landing Page -->
-<div class="landing" id="landing">
-    <h1>Calaindar</h1>
-    <p>AI를 이용해 자연스러운 대화로<br>Google Calendar에 일정을 추가해보세요.</p>
-    <div class="landing-arrow" onclick="enterApp()">⬇</div>
-</div>
+<!--전체 화면 고정(100%)-->
+<body class="app-shell">
 
-<!-- Main -->
-<div class="nav">AI 일정 생성</div>
+<!--스플래쉬 화면-->
+<section id="appLanding" class="app-splash">
+    <h1 class="app-splash__title">Calainder</h1>
+    <p class="app-splash__description">
+        AI가 텍스트와 이미지를 분석해<br>
+        Google Calendar에 일정을 등록해줍니다.
+    </p>
+    <button id="appEnterButton" type="button" class="app-splash__enter" aria-label="시작하기">↓</button>
+</section>
 
-<div class="container" id="chatArea">
-    <div class="msg ai">추가할 일정을 자유롭게 입력해주세요!</div>
-</div>
+<!--스플래쉬 이후 화면-->
+<header class="app-header">AI 일정 생성</header>
 
-<!-- Edit Modal -->
-<div id="editModal" class="modal-overlay">
-    <div class="modal-window">
-        <h2>일정 수정</h2>
+<!--채팅 기록창-->
+<main class="app-main">
+    <section id="chatFeed" class="chat-feed">
+        <div class="chat-message chat-message--ai">추가할 일정이나 조회할 내용을 입력해주세요.</div>
+    </section>
+</main>
 
-        <label>제목</label>
-        <input type="text" id="editTitle">
+<!--E-class 크롤링 로그인 화면-->
+<div id="crawlLoginModal" class="app-modal">
+    <form id="crawlLoginForm" class="app-modal__window">
+        <h2 class="app-modal__title">과제 일정 가져오기</h2>
 
-        <label>설명</label>
-        <input type="text" id="editDescription">
+        <label class="app-modal__label" for="studentIdInput">학번</label>
+        <input id="studentIdInput" class="app-modal__input" type="text" placeholder="예: 2025123456">
 
-        <label>장소</label>
-        <input type="text" id="editLocation">
+        <label class="app-modal__label" for="studentPasswordInput">비밀번호</label>
+        <input id="studentPasswordInput" class="app-modal__input" type="password" placeholder="비밀번호 입력">
 
-        <label>시작 날짜</label>
-        <input type="date" id="editStartDate">
-
-        <label>종료 날짜</label>
-        <input type="date" id="editEndDate">
-
-        <label>시작 시간</label>
-        <input type="time" id="editStartTime">
-
-        <label>종료 시간</label>
-        <input type="time" id="editEndTime">
-
-        <div class="modal-buttons">
-            <button class="modal-btn cancel" onclick="closeEditModal()">닫기</button>
-            <button class="modal-btn save">저장</button>
-        </div>
-    </div>
-</div>
-
-<!-- login 모달 -->
-<div id="loginModal" class="modal-overlay">
-    <form class="modal-window" id="loginForm">
-        <h2>로그인</h2>
-
-        <label>학번</label>
-        <input type="text" id="loginStudentId" placeholder="예: 2025123456">
-
-        <label>비밀번호</label>
-        <input type="password" id="loginPassword" placeholder="비밀번호 입력">
-
-        <div class="modal-buttons">
-            <button class="modal-btn cancel" onclick="closeLoginModal()">닫기</button>
-            <button class="modal-btn save" >확인</button>
+        <div class="app-modal__actions">
+            <button id="crawlLoginCancelButton" type="button" class="app-modal__button app-modal__button--neutral">닫기</button>
+            <button type="submit" class="app-modal__button app-modal__button--primary">확인</button>
         </div>
     </form>
 </div>
 
-<div id="imagePreview" style="font-size:14px; color:#555; padding-left:5px; display:none;"></div>
+<!--채팅창-->
+<section id="chatComposer" class="chat-composer">
+    <div id="attachmentPreview" class="chat-composer__preview" hidden></div>
+    <div class="chat-composer__row">
+        <input id="attachmentInput" type="file" accept="image/*" hidden>
+        <button id="attachmentButton" type="button" class="chat-composer__icon" aria-label="이미지 업로드">📎</button>
+        <div id="composerDropZone" class="chat-composer__drop-zone">
+            <textarea
+                id="composerInput"
+                class="chat-composer__input"
+                rows="2"
+                placeholder="예: 내일 오전 10시에 팀 미팅 잡아줘"></textarea>
+        </div>
+        <button id="sendMessageButton" type="button" class="chat-composer__submit">전송</button>
+    </div>
+</section>
 
-<div class="prompt-box">
-    <div class="clip-btn">📎</div>
-
-    <!-- 로그인 버튼 -->
-    <button onclick="openLoginModal()" style="background:#555; color:white; border-radius:10px;">로그인</button>
-
-    <textarea id="userInput" rows="2" placeholder="예: 내일 오전 10시에 팀 미팅 잡아줘"></textarea>
-    <button onclick="callAiChat()">전송</button>
+<!--퀵메뉴-->
+    <div id="quickMenu" class="quick-menu" hidden>
+        <div id="quickMenuPanel" class="quick-menu__panel" hidden>
+            <button id="openGoogleCalendarButton" type="button" class="quick-menu__item">내 구글 캘린더로 이동</button>
+            <button id="crawlLoginButton" type="button" class="quick-menu__item">과제 일정 가져오기</button>
+        </div>
+        <button id="quickMenuButton" type="button" class="quick-menu__trigger" aria-label="추가 기능 열기" aria-expanded="false">☰</button>
 </div>
 
-<div id="toast" class="toast"></div>
-</body>
+<div id="appToast" class="app-toast"></div>
+
 <script src="/js/index.js"></script>
+</body>
 </html>

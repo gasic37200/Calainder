@@ -9,6 +9,10 @@ __pycache__/
 venv/
 *.log
 
+### Python / Playwright state ###
+**/mjc_state.json
+storage_state*.json
+
 ### Spring Boot ###
 target/
 *.jar
@@ -16,7 +20,7 @@ target/
 .gradle/
 build/
 
-### Spring 민감 정보 (경로 수정!) ###
+### Spring 민감 정보 ###
 **/application.yml
 **/application-*.yml
 !**/application.yml.example
@@ -31,3 +35,8 @@ tokens/
 ### OS ###
 .DS_Store
 Thumbs.db
+
+### Runtime / temp ###
+*.tmp
+*.temp
+logs/

@@ -1,359 +1,973 @@
-/* -------------------------------------------
-🚪 Landing 페이지 숨기기
--------------------------------------------*/
+﻿const ui = {
+    landing: document.getElementById('appLanding'),
+    enterButton: document.getElementById('appEnterButton'),
+    chatFeed: document.getElementById('chatFeed'),
+    toast: document.getElementById('appToast'),
+    chatComposer: document.getElementById('chatComposer'),
+    composerDropZone: document.getElementById('composerDropZone'),
+    attachmentInput: document.getElementById('attachmentInput'),
+    attachmentButton: document.getElementById('attachmentButton'),
+    attachmentPreview: document.getElementById('attachmentPreview'),
+    quickMenu: document.getElementById('quickMenu'),
+    quickMenuButton: document.getElementById('quickMenuButton'),
+    quickMenuPanel: document.getElementById('quickMenuPanel'),
+    openGoogleCalendarButton: document.getElementById('openGoogleCalendarButton'),
+    crawlLoginButton: document.getElementById('crawlLoginButton'),
+    composerInput: document.getElementById('composerInput'),
+    sendMessageButton: document.getElementById('sendMessageButton'),
+    crawlLoginModal: document.getElementById('crawlLoginModal'),
+    crawlLoginForm: document.getElementById('crawlLoginForm'),
+    studentIdInput: document.getElementById('studentIdInput'),
+    studentPasswordInput: document.getElementById('studentPasswordInput'),
+    crawlLoginCancelButton: document.getElementById('crawlLoginCancelButton')
+};
+
+/* =========================
+   기본 UI 유틸
+========================= */
+
 function enterApp() {
-    document.getElementById("landing").classList.add("hide");
+    ui.landing.classList.add('app-splash--hidden');
+    ui.quickMenu.hidden = false;
 }
 
-/* -------------------------------------------
-✨ 채팅 메시지 UI
--------------------------------------------*/
-function addMessage(text, type) {
-    const chat = document.getElementById("chatArea");
-    const div = document.createElement("div");
-    div.className = `msg ${type}`;
-    div.textContent = text;
-    chat.appendChild(div);
-    chat.scrollTop = chat.scrollHeight;
+function scrollChatToBottom() {
+    ui.chatFeed.scrollTop = ui.chatFeed.scrollHeight;
 }
 
-/* -------------------------------------------
-✨ 이미지 메시지 UI
--------------------------------------------*/
-let imageMessageEl = null;   // 이미지 메시지 div
-let imageFile = null;
-function addImgMessage(text, type) {
-    const chat = document.getElementById("chatArea");
+function addChatMessage(text, type) {
+    const message = document.createElement('div');
+    message.className = `chat-message chat-message--${type}`;
+    message.textContent = text;
+    ui.chatFeed.appendChild(message);
+    scrollChatToBottom();
+    return message;
+}
 
-    // 🔥 기존 이미지 메시지가 있으면 제거
-    if (imageMessageEl) {
-        imageMessageEl.remove()
+function updateChatMessage(message, text) {
+    if (!message) {
+        return;
     }
 
-    // 하나의 말풍선
-    const imageMsg = document.createElement("div");
-    imageMsg.className = `msg ${type} image`;
-
-    // X 버튼
-    const cancel = document.createElement("span");
-    cancel.textContent = "❌";
-    cancel.style.cursor = "pointer";
-
-    cancel.onclick = () => {
-        imageFile = null;
-        imageMsg.remove()
-        imageMessageEl = null;
-    };
-
-    // 텍스트
-    const imageName = document.createElement("span");
-    imageName.textContent = text;
-
-    // 같은 말풍선 안에 추가 ⭐
-    imageMsg.appendChild(cancel);
-    imageMsg.appendChild(imageName);
-
-    chat.appendChild(imageMsg);
-
-    chat.scrollTop = chat.scrollHeight;
-
-    // ⭐ 현재 이미지 메시지 기억
-    imageMessageEl = imageMsg;
+    message.textContent = text;
+    scrollChatToBottom();
 }
 
-/* -------------------------------------------
-📌 일정 카드 UI
--------------------------------------------*/
-function createEventCard(dto) {
-    const chat = document.getElementById("chatArea");
-    const card = document.createElement("div");
+function showLoadingMessage() {
+    addChatMessage('AI가 일정을 분석하고 있어요...', 'ai');
+}
 
-    card.className = "event-card";
-    card.setAttribute("data-id", dto.id);
+function showToast(text) {
+    ui.toast.innerText = text;
+    ui.toast.classList.add('app-toast--visible');
+    setTimeout(() => ui.toast.classList.remove('app-toast--visible'), 2000);
+}
 
+// 서버에서 보낸 json을 읽음
+async function readJsonResponse(response) {
+    const text = await response.text();
+    if (!text) {
+        throw new Error('응답 본문이 비어 있습니다.');
+    }
+
+    return JSON.parse(text);
+}
+
+async function readErrorMessage(response, fallbackMessage) {
+    try {
+        const errorBody = await readJsonResponse(response);
+        return errorBody.message || fallbackMessage;
+    } catch (error) {
+        return fallbackMessage;
+    }
+}
+
+// 내 구글캘린더로 이동
+function openCalendar() {
+    window.open('https://calendar.google.com/', '_blank');
+}
+
+function formatScheduleDateTime(scheduleDateTime) {
+    if (!scheduleDateTime) {
+        return '';
+    }
+
+    const date = scheduleDateTime.date || '';
+    const time = scheduleDateTime.time ? String(scheduleDateTime.time).slice(0, 5) : '';
+    return `${date} ${time}`.trim();
+}
+
+// 알림 데이터 포맷
+function getReminderSummary(dto) {
+    if (!dto.reminderEnabled) {
+        return '알림 없음';
+    }
+
+    return `${dto.reminderMinutes ?? 30}분 전 알림`;
+}
+
+/* =========================
+   첨부파일(이미지) 처리
+   - 버튼 선택
+   - 붙여넣기
+   - 드래그 앤 드롭
+   - 썸네일 프리뷰
+========================= */
+
+let selectedAttachment = null; // 선택한 첨부이미지
+let attachmentPreviewUrl = null; // 프리뷰에 올릴 첨부이미지 url
+
+// 첨부이미지 올릴 시 생성되는 프리뷰
+function renderAttachmentPreview(file) {
+    ui.attachmentPreview.innerHTML = '';
+
+    // 파일이 ㅅ
+    if (!file) {
+        ui.attachmentPreview.hidden = true;
+        return;
+    }
+
+    attachmentPreviewUrl = URL.createObjectURL(file);
+
+    // 프리뷰 아이템 영역
+    const previewItem = document.createElement('div');
+    previewItem.className = 'chat-composer__preview-item';
+
+    // 썸네일
+    const previewThumb = document.createElement('img');
+    previewThumb.className = 'chat-composer__preview-thumb';
+    previewThumb.src = attachmentPreviewUrl;
+    previewThumb.alt = file.name;
+
+    // 썸네일 위 파일 이름를 위한 오버레이 영역
+    const previewOverlay = document.createElement('div');
+    previewOverlay.className = 'chat-composer__preview-overlay';
+
+    // 오버레이에 들어갈 이미지 이름
+    const previewName = document.createElement('span');
+    previewName.className = 'chat-composer__preview-name';
+    previewName.textContent = file.name;
+
+    // 삭제 버튼
+    const removeButton = document.createElement('button');
+    removeButton.type = 'button';
+    removeButton.className = 'chat-composer__preview-remove';
+    removeButton.textContent = '×';
+    removeButton.setAttribute('aria-label', '첨부이미지 제거');
+    removeButton.addEventListener('click', clearAttachment);
+
+    previewOverlay.appendChild(previewName);
+    previewItem.appendChild(previewThumb);
+    previewItem.appendChild(previewOverlay);
+    previewItem.appendChild(removeButton);
+    ui.attachmentPreview.appendChild(previewItem);
+    ui.attachmentPreview.hidden = false;
+}
+
+function clearAttachment() {
+    selectedAttachment = null;
+
+    if (attachmentPreviewUrl) {
+        // 프리뷰 url이 있다면 브라우저가 해당 파일을 메모리에 올린거기 때문에
+        // reovke로 메모리에서 없애야 함
+        URL.revokeObjectURL(attachmentPreviewUrl);
+        attachmentPreviewUrl = null;
+    }
+
+    ui.attachmentInput.value = '';
+    ui.attachmentPreview.innerHTML = '';
+    ui.attachmentPreview.hidden = true;
+}
+
+function setSelectedAttachment(file) {
+    if (!file || !file.type.startsWith('image/')) {
+        showToast('이미지 파일만 업로드할 수 있습니다.');
+        return;
+    }
+
+    clearAttachment();
+    selectedAttachment = file;
+    renderAttachmentPreview(file);
+}
+
+// 첨부파일 버튼을 통해 이미지가 선택되면
+function handleAttachmentSelection(event) {
+    const file = event.target.files?.[0];
+    if (!file) {
+        return;
+    }
+
+    setSelectedAttachment(file);
+}
+
+function handleComposerPaste(event) {
+    const items = event.clipboardData?.items;
+    if (!items) {
+        return;
+    }
+
+    for (const item of items) {
+        if (item.type.startsWith('image/')) {
+            const file = item.getAsFile();
+            if (file) {
+                event.preventDefault();
+                setSelectedAttachment(file);
+                break;
+            }
+        }
+    }
+}
+
+function handleComposerDragOver(event) {
+    // 브라우저의 기본 드랍 동작 막음
+    event.preventDefault();
+    ui.composerDropZone.classList.add('chat-composer__drop-zone--dragover');
+}
+
+function handleComposerDragLeave(event) {
+    event.preventDefault();
+
+    // relatedTarget은 드래그가 이동한 다음 대상
+    // 영역 밖에 나간건지 확인
+    if (!ui.composerDropZone.contains(event.relatedTarget)) {
+        ui.composerDropZone.classList.remove('chat-composer__drop-zone--dragover');
+    }
+}
+
+function handleComposerDrop(event) {
+    event.preventDefault();
+    // 파일을 놓았으니 드래그 강조 스타일을 제거
+    ui.composerDropZone.classList.remove('chat-composer__drop-zone--dragover');
+
+    // 드래그해서 놓은 파일 목록 중 첫 번째 파일 하나를 가져옴
+    const file = event.dataTransfer?.files?.[0];
+    if (!file || !file.type.startsWith('image/')) {
+        showToast('이미지 파일만 업로드할 수 있습니다.');
+        return;
+    }
+
+    setSelectedAttachment(file);
+}
+
+/* =========================
+   퀵 메뉴
+   - 추가 기능 열기/닫기
+========================= */
+
+function toggleQuickMenu() {
+    const isOpening = ui.quickMenuPanel.hidden;
+    ui.quickMenuPanel.hidden = !isOpening;
+    ui.quickMenuButton.setAttribute('aria-expanded', String(isOpening));
+}
+
+function closeQuickMenu() {
+    ui.quickMenuPanel.hidden = true;
+    ui.quickMenuButton.setAttribute('aria-expanded', 'false');
+}
+
+function handleQuickMenuOutsideClick(event) {
+    if (
+        !ui.quickMenuPanel.hidden &&
+        !ui.quickMenuPanel.contains(event.target) &&
+        !ui.quickMenuButton.contains(event.target)
+    ) {
+        closeQuickMenu();
+    }
+}
+
+/* =========================
+   일정 카드 렌더링
+   - 초안 카드 / 저장 완료 카드 공용
+   - 인라인 수정 UI 생성
+========================= */
+
+function createTextField(label, key, value) {
+    return `
+        <div class="schedule-card__field">
+            <span class="schedule-card__label">${label}</span>
+            <span class="schedule-card__value" data-view="${key}">${value ?? ''}</span>
+            <input class="schedule-card__input" data-edit="${key}" type="text" value="${value ?? ''}">
+        </div>
+    `;
+}
+
+function createDateTimeField(label, key, value) {
+    return `
+        <div class="schedule-card__field schedule-card__field--datetime">
+            <span class="schedule-card__label">${label}</span>
+            <span class="schedule-card__value" data-view="${key}">${formatScheduleDateTime(value)}</span>
+            <div class="schedule-card__datetime-editor">
+                <input class="schedule-card__input schedule-card__input--date" data-edit="${key}-date" type="date" value="${value?.date ?? ''}">
+                <input class="schedule-card__input schedule-card__input--time" data-edit="${key}-time" type="time" value="${value?.time ? String(value.time).slice(0, 5) : ''}">
+            </div>
+        </div>
+    `;
+}
+
+function createReminderField(dto) {
+    const checked = dto.reminderEnabled ? 'checked' : '';
+    const minutesValue = dto.reminderMinutes ?? 30;
+    const hiddenAttr = dto.reminderEnabled ? '' : 'hidden';
+
+    return `
+        <div class="schedule-card__field schedule-card__field--reminder">
+            <span class="schedule-card__label">알림</span>
+            <span class="schedule-card__value" data-view="reminder">${getReminderSummary(dto)}</span>
+            <div class="schedule-card__reminder-editor">
+                <label class="schedule-card__toggle">
+                    <input class="schedule-card__toggle-input" data-edit="reminder-enabled" type="checkbox" ${checked}>
+                    <span class="schedule-card__toggle-slider"></span>
+                    <span class="schedule-card__toggle-text">알림 사용</span>
+                </label>
+                <div class="schedule-card__minutes" data-role="reminder-minutes" ${hiddenAttr}>
+                    <input class="schedule-card__input schedule-card__input--minutes" data-edit="reminder-minutes" type="number" min="1" step="1" value="${minutesValue}">
+                    <span class="schedule-card__minutes-label">분 전</span>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function createActionButtons(status) {
+    if (status === 'draft') {
+        return `
+            <button type="button" class="schedule-card__button schedule-card__button--primary" data-role="confirm-schedule">등록</button>
+            <button type="button" class="schedule-card__button schedule-card__button--primary" data-role="edit-schedule">수정</button>
+            <button type="button" class="schedule-card__button schedule-card__button--primary" data-role="save-schedule" hidden>저장</button>
+            <button type="button" class="schedule-card__button schedule-card__button--neutral" data-role="cancel-edit" hidden>취소</button>
+            <button type="button" class="schedule-card__button schedule-card__button--danger" data-role="discard-schedule">삭제</button>
+        `;
+    }
+
+    return `
+        <button type="button" class="schedule-card__button schedule-card__button--primary" data-role="open-calendar">캘린더에서 보기</button>
+        <button type="button" class="schedule-card__button schedule-card__button--primary" data-role="edit-schedule">수정</button>
+        <button type="button" class="schedule-card__button schedule-card__button--primary" data-role="save-schedule" hidden>저장</button>
+        <button type="button" class="schedule-card__button schedule-card__button--neutral" data-role="cancel-edit" hidden>취소</button>
+        <button type="button" class="schedule-card__button schedule-card__button--danger" data-role="delete-schedule">삭제</button>
+    `;
+}
+
+function createEventCard(dto, options = {}) {
+    const status = options.status ?? 'saved';
+    const isDraft = status === 'draft';
+    const heading = isDraft ? '일정 초안' : '일정 정보';
+    const append = options.append ?? true;
+
+    const card = document.createElement('div');
+    card.className = 'schedule-card';
+    card.dataset.status = status;
+    card.dataset.id = dto.id ?? '';
     card.innerHTML = `
-        <h3>✔ 일정 추가 완료</h3>
-        <p>📌 제목: <span class="ev-title">${dto.title}</span></p>
-        <p>📄 설명: <span class="ev-description">${dto.description ?? ""}</span></p>
-        <p>🗺 장소: <span class="ev-location">${dto.location ?? ""}</span></p>
-        <p>🕒 시작: <span class="ev-start">${dto.start?.date || ""} ${dto.start?.time || ""}</span></p>
-        <p>🕒 종료: <span class="ev-end">${dto.end?.date || ""} ${dto.end?.time || ""}</span></p>
-
-        <button class="btn-view" onclick="window.open('http://calendar.google.com/')">캘린더에서 보기</button>
-        <button class="btn-edit">수정</button>
+        <h3 class="schedule-card__title">${heading}</h3>
+        <div class="schedule-card__body">
+            ${createTextField('제목', 'title', dto.title)}
+            ${createTextField('설명', 'description', dto.description)}
+            ${createTextField('장소', 'location', dto.location)}
+            ${createDateTimeField('시작', 'start', dto.start)}
+            ${createDateTimeField('종료', 'end', dto.end)}
+            ${createReminderField(dto)}
+        </div>
+        <div class="schedule-card__actions">
+            ${createActionButtons(status)}
+        </div>
     `;
 
-    chat.appendChild(card);
-    chat.scrollTop = chat.scrollHeight;
+    populateCardFields(card, dto);
+    bindScheduleCardActions(card);
 
-    const editBtn = card.querySelector(".btn-edit");
-    editBtn.onclick = () => openEditModal(dto);
-}
-
-
-/* -------------------------------------------
-🍞 Toast
--------------------------------------------*/
-function showToast(text) {
-    const toast = document.getElementById("toast");
-    toast.innerText = text
-    toast.classList.add("show");
-    setTimeout(() => toast.classList.remove("show"), 2000);
-}
-
-/* -------------------------------------------
-⏳ 로딩 메시지
-—————————————————————*/
-function showLoadingMessage() {
-    addMessage("⏳ AI가 일정을 분석하고 있어요…", "ai");
-}
-
-/* -------------------------------------------
-📷 이미지 업로드 (파일 이름 표시 + 로딩 메세지)
--------------------------------------------*/
-document.querySelector(".clip-btn").addEventListener("click", () => {
-    const fileInput = document.createElement("input");
-    fileInput.type = "file";
-    fileInput.accept = "image/*";
-
-    fileInput.onchange = async () => {
-        imageFile = fileInput.files[0];
-        if (!imageFile) return;
-
-        // 파일 명 보여주기
-        addImgMessage(`📎 선택한 이미지: ${imageFile.name}`, "user")
+    if (append) {
+        ui.chatFeed.appendChild(card);
+        scrollChatToBottom();
     }
 
-    fileInput.click();
-})
+    return card;
+}
 
-/* -------------------------------------------
-💬 일정 전송
--------------------------------------------*/
+function populateCardFields(card, dto) {
+    card._schedule = structuredClone(dto);
+    card._snapshot = structuredClone(dto);
+    card.dataset.id = dto.id ?? '';
+
+    card.querySelector('[data-view="title"]').textContent = dto.title ?? '';
+    card.querySelector('[data-view="description"]').textContent = dto.description ?? '';
+    card.querySelector('[data-view="location"]').textContent = dto.location ?? '';
+    card.querySelector('[data-view="start"]').textContent = formatScheduleDateTime(dto.start);
+    card.querySelector('[data-view="end"]').textContent = formatScheduleDateTime(dto.end);
+    card.querySelector('[data-view="reminder"]').textContent = getReminderSummary(dto);
+
+    card.querySelector('[data-edit="title"]').value = dto.title ?? '';
+    card.querySelector('[data-edit="description"]').value = dto.description ?? '';
+    card.querySelector('[data-edit="location"]').value = dto.location ?? '';
+    card.querySelector('[data-edit="start-date"]').value = dto.start?.date ?? '';
+    card.querySelector('[data-edit="start-time"]').value = dto.start?.time ? String(dto.start.time).slice(0, 5) : '';
+    card.querySelector('[data-edit="end-date"]').value = dto.end?.date ?? '';
+    card.querySelector('[data-edit="end-time"]').value = dto.end?.time ? String(dto.end.time).slice(0, 5) : '';
+    card.querySelector('[data-edit="reminder-enabled"]').checked = dto.reminderEnabled;
+    card.querySelector('[data-edit="reminder-minutes"]').value = dto.reminderMinutes ?? 30;
+
+    syncReminderEditor(card);
+    setCardEditing(card, false);
+}
+
+function setCardEditing(card, isEditing) {
+    card.classList.toggle('schedule-card--editing', isEditing);
+
+    const isDraft = card.dataset.status === 'draft';
+    const editButton = card.querySelector('[data-role="edit-schedule"]');
+    const saveButton = card.querySelector('[data-role="save-schedule"]');
+    const cancelButton = card.querySelector('[data-role="cancel-edit"]');
+    const confirmButton = card.querySelector('[data-role="confirm-schedule"]');
+    const discardButton = card.querySelector('[data-role="discard-schedule"]');
+    const calendarButton = card.querySelector('[data-role="open-calendar"]');
+    const deleteButton = card.querySelector('[data-role="delete-schedule"]');
+
+    if (editButton) editButton.hidden = isEditing;
+    if (saveButton) saveButton.hidden = !isEditing;
+    if (cancelButton) cancelButton.hidden = !isEditing;
+    if (confirmButton) confirmButton.hidden = isEditing || !isDraft;
+    if (discardButton) discardButton.hidden = isEditing || !isDraft;
+    if (calendarButton) calendarButton.hidden = isEditing || isDraft;
+    if (deleteButton) deleteButton.hidden = isEditing;
+}
+
+function syncReminderEditor(card) {
+    const reminderToggle = card.querySelector('[data-edit="reminder-enabled"]');
+    const minutesBox = card.querySelector('[data-role="reminder-minutes"]');
+    const minutesInput = card.querySelector('[data-edit="reminder-minutes"]');
+
+    // 토글 버튼이나 분 박스가 없으면 리턴
+    if (!reminderToggle || !minutesBox) {
+        return;
+    }
+
+    minutesBox.hidden = !reminderToggle.checked;
+
+    if (reminderToggle.checked && minutesInput && !minutesInput.value.trim()) {
+        minutesInput.value = '30';
+    }
+}
+
+function normalizeReminderMinutes(card) {
+    const minutesInput = card.querySelector('[data-edit="reminder-minutes"]');
+    if (!minutesInput) {
+        return 30;
+    }
+
+    const rawValue = minutesInput.value.trim();
+    const parsed = Number(rawValue);
+    const normalized = Number.isFinite(parsed) && parsed >= 1 ? Math.floor(parsed) : 30;
+    minutesInput.value = String(normalized);
+    return normalized;
+}
+
+function readCardSchedule(card) {
+    const reminderEnabled = card.querySelector('[data-edit="reminder-enabled"]').checked;
+    const reminderMinutes = reminderEnabled ? normalizeReminderMinutes(card) : null;
+
+    return {
+        // 카드 값 복사
+        ...card._schedule,
+        title: card.querySelector('[data-edit="title"]').value.trim(),
+        description: card.querySelector('[data-edit="description"]').value.trim(),
+        location: card.querySelector('[data-edit="location"]').value.trim(),
+        start: {
+            date: card.querySelector('[data-edit="start-date"]').value,
+            time: card.querySelector('[data-edit="start-time"]').value || null
+        },
+        end: {
+            date: card.querySelector('[data-edit="end-date"]').value,
+            time: card.querySelector('[data-edit="end-time"]').value || null
+        },
+        reminderEnabled,
+        reminderMinutes
+    };
+}
+
+function validateScheduleRange(schedule) {
+    const startDate = schedule.start?.date;
+    const endDate = schedule.end?.date;
+    const startTime = schedule.start?.time;
+    const endTime = schedule.end?.time;
+
+    if (!startDate || !endDate) {
+        showToast('시작일과 종료일을 입력해주세요.');
+        return false;
+    }
+
+    if ((startTime && !endTime) || (!startTime && endTime)) {
+        showToast('시작 시간과 종료 시간을 모두 입력해주세요.');
+        return false;
+    }
+
+    if (!startTime && !endTime) {
+        return true;
+    }
+
+    const startAt = new Date(`${startDate}T${startTime}`);
+    const endAt = new Date(`${endDate}T${endTime}`);
+
+    if (Number.isNaN(startAt.getTime()) || Number.isNaN(endAt.getTime())) {
+        showToast('일정 시간을 다시 확인해주세요.');
+        return false;
+    }
+
+    if (endAt <= startAt) {
+        showToast('종료 시간은 시작 시간보다 늦어야 합니다.');
+        return false;
+    }
+
+    return true;
+}
+
+/* =========================
+   카드 액션 바인딩
+   - 초안 확인
+   - 인라인 수정
+   - 저장 완료 후 수정/삭제
+========================= */
+
+function bindScheduleCardActions(card) {
+    const confirmButton = card.querySelector('[data-role="confirm-schedule"]');
+    const editButton = card.querySelector('[data-role="edit-schedule"]');
+    const saveButton = card.querySelector('[data-role="save-schedule"]');
+    const cancelButton = card.querySelector('[data-role="cancel-edit"]');
+    const discardButton = card.querySelector('[data-role="discard-schedule"]');
+    const deleteButton = card.querySelector('[data-role="delete-schedule"]');
+    const calendarButton = card.querySelector('[data-role="open-calendar"]');
+    const reminderToggle = card.querySelector('[data-edit="reminder-enabled"]');
+    const reminderMinutesInput = card.querySelector('[data-edit="reminder-minutes"]');
+
+    // if는 버튼이 null일 수 있어 넣음.
+    if (confirmButton) {
+        confirmButton.onclick = () => confirmDraftSchedule(card);
+    }
+
+    if (editButton) {
+        editButton.onclick = () => {
+            card._snapshot = structuredClone(card._schedule);
+            setCardEditing(card, true);
+        };
+    }
+
+    if (saveButton) {
+        saveButton.onclick = () => saveCardEdit(card);
+    }
+
+    if (cancelButton) {
+        cancelButton.onclick = () => populateCardFields(card, card._snapshot);
+    }
+
+    if (discardButton) {
+        discardButton.onclick = () => card.remove();
+    }
+
+    if (deleteButton) {
+        deleteButton.onclick = () => deleteEvent(card._schedule.id);
+    }
+
+    if (calendarButton) {
+        calendarButton.onclick = openCalendar;
+    }
+
+    if (reminderToggle) {
+        reminderToggle.onchange = (event) => {
+            event.stopPropagation();
+            syncReminderEditor(card);
+        };
+    }
+
+    if (reminderMinutesInput) {
+        reminderMinutesInput.onblur = () => normalizeReminderMinutes(card);
+        reminderMinutesInput.oninput = () => {
+            reminderMinutesInput.value = reminderMinutesInput.value.replace(/[^\d]/g, '');
+        };
+    }
+}
+
+// 초안 생성 후 저장버튼 누를 시 캘린더에 저장
+function finalizeCardAsSaved(card, savedSchedule) {
+    card.dataset.status = 'saved';
+    card.querySelector('.schedule-card__title').textContent = '일정 정보';
+    card.querySelector('.schedule-card__actions').innerHTML = createActionButtons('saved');
+    populateCardFields(card, savedSchedule);
+    bindScheduleCardActions(card);
+}
+
+/* =========================
+   API 호출
+   - AI 일정 초안 생성
+   - 초안 확인 후 캘린더 등록
+   - 저장 완료 일정 수정/삭제
+   - 일정 조회
+========================= */
+
+function renderLookupSchedules(schedules) {
+    addChatMessage(`조회된 일정 ${schedules.length}건입니다.`, 'ai');
+
+    const lookupGroup = document.createElement('div');
+    lookupGroup.className = 'lookup-results';
+
+    const lookupItems = [];
+
+    const setActiveLookupCard = (activeIndex) => {
+        lookupItems.forEach(({ item, summaryButton, card }, index) => {
+            const isActive = index === activeIndex;
+            item.dataset.expanded = String(isActive);
+            summaryButton.dataset.expanded = String(isActive);
+            summaryButton.setAttribute('aria-expanded', String(isActive));
+            summaryButton.querySelector('.lookup-results__arrow').textContent = isActive ? '▼' : '▶';
+            card.hidden = !isActive;
+        });
+    };
+
+    schedules.forEach((schedule, index) => {
+        const lookupItem = document.createElement('div');
+        lookupItem.className = 'lookup-results__entry';
+        lookupItem.dataset.expanded = String(index === 0);
+
+        const summaryButton = document.createElement('button');
+        summaryButton.type = 'button';
+        summaryButton.className = 'lookup-results__item';
+        summaryButton.dataset.expanded = String(index === 0);
+        summaryButton.setAttribute('aria-expanded', String(index === 0));
+        summaryButton.innerHTML = `
+            <span class="lookup-results__arrow">${index === 0 ? '▼' : '▶'}</span>
+            <span class="lookup-results__text">${formatScheduleDateTime(schedule.start)} ${schedule.title ?? '일정'}</span>
+        `;
+
+        const card = createEventCard(schedule, { status: 'saved', append: false });
+        card.hidden = index !== 0;
+
+        summaryButton.addEventListener('click', () => setActiveLookupCard(index));
+
+        lookupItems.push({ item: lookupItem, summaryButton, card });
+        lookupItem.appendChild(summaryButton);
+        lookupItem.appendChild(card);
+        lookupGroup.appendChild(lookupItem);
+    });
+
+    ui.chatFeed.appendChild(lookupGroup);
+    scrollChatToBottom();
+}
+
 async function callAiChat() {
     showLoadingMessage();
 
-    const prompt = document.getElementById("userInput").value;
-
+    const prompt = ui.composerInput.value.trim();
     const formData = new FormData();
 
-    // prompt만 있을 수도 있음
-    if (prompt && prompt.trim() !== "") {
-        formData.append("prompt", prompt);
+    if (prompt) {
+        formData.append('prompt', prompt);
     }
 
-    // 이미지가 있을 수도 있음
-    if (imageFile) {
-        formData.append("image", imageFile);
+    if (selectedAttachment) {
+        formData.append('image', selectedAttachment);
     }
 
-    const apiUrl = 'http://localhost:8888/api/ai/schedule';
-    const googleAuthStartUrl = 'http://localhost:8888/login/oauth2/code/google';
+    ui.composerInput.value = '';
 
-    document.getElementById("userInput").value = ""
+    try {
+        const response = await fetch('/api/ai/schedule', {
+            method: 'POST',
+            credentials: 'include',
+            body: formData
+        });
 
-    // fetch 요청 시작
-    fetch(apiUrl, {
-        method: 'POST',
-        // **쿠키(세션)를 반드시 포함하여 서버로 보냅니다.**
-        credentials: 'include',
-        body: formData
-    })
-
-    // -----------------------------------------------------
-    // 2. 응답 상태 코드 확인 및 인증 오류 처리 (핵심)
-    // -----------------------------------------------------
-    .then(response => {
-        document.getElementById("userInput").value = ""
-
-        // HTTP 401 Unauthorized 코드는 로그인이 필요하다는 의미
         if (response.status === 401) {
-            addMessage("🔒 세션이 만료되었습니다. 로그인이 필요합니다.", "ai");
-
-            // 1초 후 로그인 페이지로 이동하여 OAuth를 시작합니다.
+            addChatMessage('구글 로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다.', 'ai');
             setTimeout(() => {
-                window.location.href = googleAuthStartUrl;
+                window.location.href = '/oauth2/authorization/google';
             }, 1000);
-
-            // Promise 체인 중단: 응답을 JSON으로 파싱하지 않고 바로 에러를 던집니다.
-            // (이 에러는 아래 .catch에서 잡히지 않도록 return 문으로 처리해야 함)
-            throw new Error('Unauthorized');
-        }
-
-        // 401 외의 다른 오류 상태 (예: 404, 500 등) 처리
-        if (!response.ok) {
-            addMessage(`❌ 서버 오류 발생: ${response.status}`, "ai");
-            throw new Error(`HTTP Error: ${response.status}`);
-        }
-
-        // 응답을 JSON으로 파싱하여 다음 .then으로 넘깁니다.
-        return response.json();
-    })
-
-    // -----------------------------------------------------
-    // 3. 응답 데이터 처리 (성공 시)
-    // -----------------------------------------------------
-    .then(data => {
-        // 성공적으로 데이터가 넘어왔을 때 실행됩니다.
-
-        // 최종 AI 메시지 표시
-        addMessage("일정이 성공적으로 생성되었습니다.", "ai");
-        createEventCard(data)
-        showToast("Google Calendar에 일정이 추가되었습니다 ✔");
-    })
-
-    // -----------------------------------------------------
-    // 4. 네트워크 또는 예상치 못한 오류 처리
-    // -----------------------------------------------------
-    .catch(error => {
-        // 'Unauthorized' 에러는 이미 처리되었으므로 무시합니다.
-        if (error.message === 'Unauthorized') {
             return;
         }
 
-        // TypeError: Failed to fetch (네트워크 연결 실패) 또는 JSON 파싱 오류 처리
-        addMessage("⚠️ 요청 실패: 서버 연결 상태나 URL을 확인하세요.", "ai");
+        if (!response.ok) {
+            throw new Error(await readErrorMessage(response, '요청 처리 중 오류가 발생했습니다.'));
+        }
+
+        const schedules = await readJsonResponse(response);
+        const isCreate = schedules[0]?.intent === 'create';
+
+        if (isCreate) {
+            addChatMessage('일정 초안이 생성되었습니다. 확인 후 추가할 수 있습니다.', 'ai');
+            schedules.forEach((schedule) => {
+                createEventCard(schedule, { status: 'draft' });
+            });
+        } else {
+            renderLookupSchedules(schedules);
+        }
+
+        clearAttachment();
+    } catch (error) {
         console.error(error);
-    });
-}
-
-/* -------------------------------------------
-✏ 수정 모달
--------------------------------------------*/
-let currentEditEvent = null; //
-
-// 일정 수정
-function openEditModal(dto) {
-    console.log(
-        "기존 : " + JSON.stringify(currentEditEvent) +
-        ", 새로받은 : " + JSON.stringify(dto)
-    );
-    currentEditEvent = structuredClone(dto); // dto 복사
-
-    document.getElementById("editTitle").value = dto.title || "";
-    document.getElementById("editDescription").value = dto.description || "";
-    document.getElementById("editLocation").value = dto.location || "";
-    document.getElementById("editStartDate").value = dto.start?.date || "";
-    document.getElementById("editStartTime").value = dto.start?.time || "";
-    document.getElementById("editEndDate").value = dto.end?.date || "";
-    document.getElementById("editEndTime").value = dto.end?.time || "";
-
-    document.getElementById("editModal").style.display = "flex";
-}
-
-function closeEditModal() {
-    document.getElementById("editModal").style.display = "none";
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    const editModal = document.getElementById('editModal');
-
-    if (editModal) {
-        // 모달 요소 내부에서만 검색하여 충돌 방지
-        const saveButton = editModal.querySelector(".modal-btn.save");
-
-        if (saveButton) {
-            saveButton.addEventListener("click", saveEdit);
-        }
+        addChatMessage(error.message || '요청 처리 중 오류가 발생했습니다.', 'ai');
     }
-});
+}
 
-/* -------------------------------------------
-💾 수정 저장 → Spring 업데이트 → UI 적용
--------------------------------------------*/
-async function saveEdit() {
-    currentEditEvent.title = document.getElementById("editTitle").value;
-    currentEditEvent.description = document.getElementById("editDescription").value;
-    currentEditEvent.location = document.getElementById("editLocation").value;
-    currentEditEvent.start = {
-        date: document.getElementById("editStartDate").value,
-        time: document.getElementById("editStartTime").value
-    };
-    currentEditEvent.end = {
-        date: document.getElementById("editEndDate").value,
-        time: document.getElementById("editEndTime").value
-    };
+// 초안 구글 캘린더에 등록
+async function confirmDraftSchedule(card) {
+    const schedule = readCardSchedule(card);
 
-    const response = await fetch("/updateEvent", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(currentEditEvent),
-        credentials: "include"
-    });
-
-    const updated = await response.json();
-    console.log("Updated:", updated);
-
-    const parseDateTime = (value) => {
-        if (!value) return { date: "", time: "" };
-        if (typeof value === "object") return { date: value.date || "", time: value.time || "" };
-        if (typeof value === "string") {
-            const [date, timeWithZone] = value.split("T");
-            const time = timeWithZone ? timeWithZone.substring(0, 5) : "";
-            return { date, time };
-        }
-        return { date: "", time: "" };
-    };
-
-    const startParsed = parseDateTime(currentEditEvent.start);
-    const endParsed = parseDateTime(currentEditEvent.end);
-
-    const card = document.querySelector(`.event-card[data-id="${currentEditEvent.id}"]`);
-    if (card) {
-        console.log("카드 수정")
-        card.querySelector(".ev-title").textContent = currentEditEvent.title;
-        card.querySelector(".ev-description").textContent = currentEditEvent.description || "";
-        card.querySelector(".ev-location").textContent = currentEditEvent.location || "";
-        card.querySelector(".ev-start").textContent = `${startParsed.date} ${startParsed.time}`;
-        card.querySelector(".ev-end").textContent = `${endParsed.date} ${endParsed.time}`;
-
-        // 🔥 최신 DTO 세팅
-        // const newDto = { title: currentEditEvent.title, start: startParsed, end: endParsed };
-
-        // 🔥 새 DTO를 버튼에 다시 바인딩
-        const editBtn = card.querySelector(".btn-edit");
-        editBtn.onclick = () => openEditModal(currentEditEvent);
+    if (!validateScheduleRange(schedule)) {
+        return;
     }
 
-    closeEditModal();
-    showToast("Google Calendar에 일정이 수정되었습니다 ✔");
-}
-
-/* -------------------------------------------
-크롤링
--------------------------------------------*/
-document.getElementById("loginForm").addEventListener("submit", async (e) => {
-    e.preventDefault(); // 폼 기본 제출 막기
-
-    const id = document.getElementById("loginStudentId").value;
-    const pw = document.getElementById("loginPassword").value;
-
-    // 서버로 POST
     try {
-        const response = await fetch("/api/crawl/schedule", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                id: id,
-                pw: pw
-            })
+        const response = await fetch('/api/calendar/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(schedule),
+            credentials: 'include'
         });
 
-        if (response)
-            closeLoginModal()
-            addMessage("학교 일정이 추가되었습니다.", "ai")
-        // const result = await response.json();
+        if (response.status === 401) {
+            addChatMessage('구글 로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다.', 'ai');
+            setTimeout(() => {
+                window.location.href = '/oauth2/authorization/google';
+            }, 1000);
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(await readErrorMessage(response, '일정 추가 중 오류가 발생했습니다.'));
+        }
+
+        const savedSchedule = await readJsonResponse(response);
+        finalizeCardAsSaved(card, savedSchedule);
+        addChatMessage('일정을 구글 캘린더에 등록했습니다.', 'ai');
+        showToast('구글 캘린더에 일정이 추가되었습니다.');
     } catch (error) {
-        alert(error.message)
+        console.error(error);
+        addChatMessage(error.message || '일정 추가 중 오류가 발생했습니다.', 'ai');
     }
-})
+}
+
+// 수정폼에서 확인버튼 클릭
+async function saveCardEdit(card) {
+    const nextSchedule = readCardSchedule(card);
+
+    if (!validateScheduleRange(nextSchedule)) {
+        return;
+    }
+
+    //
+    if (card.dataset.status === 'draft') {
+        populateCardFields(card, nextSchedule);
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/calendar/events', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(nextSchedule),
+            credentials: 'include'
+        });
+
+        if (response.status === 401) {
+            addChatMessage('구글 로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다.', 'ai');
+            setTimeout(() => {
+                window.location.href = '/oauth2/authorization/google';
+            }, 1000);
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(await readErrorMessage(response, '일정 수정 중 오류가 발생했습니다.'));
+        }
+
+        const updated = await readJsonResponse(response);
+        populateCardFields(card, updated);
+        showToast('구글 캘린더 일정이 수정되었습니다.');
+    } catch (error) {
+        console.error(error);
+        addChatMessage(error.message || '일정 수정 중 오류가 발생했습니다.', 'ai');
+    }
+}
+
+async function deleteEvent(eventId) {
+    if (!eventId) {
+        return;
+    }
+
+    const shouldDelete = window.confirm('이 일정을 삭제할까요?');
+    if (!shouldDelete) {
+        return;
+    }
+
+    try {
+        const response = await fetch(`/api/calendar/events/${eventId}`, {
+            method: 'DELETE',
+            credentials: 'include'
+        });
+
+        if (response.status === 401) {
+            addChatMessage('구글 로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다.', 'ai');
+            setTimeout(() => {
+                window.location.href = '/oauth2/authorization/google';
+            }, 1000);
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(await readErrorMessage(response, '일정 삭제 중 오류가 발생했습니다.'));
+        }
+
+        document.querySelectorAll(`.schedule-card[data-id="${eventId}"]`).forEach((card) => card.remove());
+        addChatMessage('일정이 삭제되었습니다.', 'ai');
+        showToast('구글 캘린더에서 일정이 삭제되었습니다.');
+    } catch (error) {
+        console.error(error);
+        addChatMessage(error.message || '일정 삭제 중 오류가 발생했습니다.', 'ai');
+    }
+}
+
+/* =========================
+   과제 일정 가져오기 모달
+========================= */
 
 function openLoginModal() {
-    document.getElementById("loginModal").style.display = "flex";
+    closeQuickMenu();
+    ui.crawlLoginModal.style.display = 'flex';
 }
 
 function closeLoginModal() {
-    document.getElementById("loginModal").style.display = "none";
+    ui.crawlLoginModal.style.display = 'none';
 }
+
+async function consumeSseResponse(response, handlers = {}) {
+    // 결과값 없으면 오류 메세지
+    if (!response.body) {
+        throw new Error('스트림 응답을 받을 수 없습니다.');
+    }
+
+    // 서버에서 보내온 텍스트를 조금씩 읽음
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder('utf-8');
+    let buffer = '';
+
+    while (true) {
+        const { value, done } = await reader.read();
+        if (done) {
+            break;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+        // 이벤트를 덩어리로 쪼갬
+        let separatorIndex = buffer.indexOf('\n\n');
+        // 이벤트가 없을때까지 무한반복
+        while (separatorIndex !== -1) {
+            const block = buffer.slice(0, separatorIndex).trim();
+            buffer = buffer.slice(separatorIndex + 2);
+
+            if (block) {
+                const event = parseSseBlock(block);
+                const handler = handlers[event.name] || handlers.message;
+                if (handler) {
+                    handler(event.data);
+                }
+            }
+
+            separatorIndex = buffer.indexOf('\n\n');
+        }
+    }
+}
+
+// 이름과 메세지를 데이터 정규화
+function parseSseBlock(block) {
+    const event = { name: 'message', data: '' };
+
+    for (const line of block.split('\n')) {
+        if (line.startsWith('event:')) {
+            event.name = line.slice(6).trim();
+            continue;
+        }
+
+        if (line.startsWith('data:')) {
+            event.data = line.slice(5).trim();
+        }
+    }
+
+    return event;
+}
+
+function setStatusMessage(messageElement, text) {
+    updateChatMessage(messageElement, text || '학교 일정 연동 중 오류가 발생했습니다.');
+}
+
+async function handleCrawlLoginSubmit(event) {
+    event.preventDefault();
+
+    const id = ui.studentIdInput.value;
+    const pw = ui.studentPasswordInput.value;
+
+    closeLoginModal();
+    const statusMessage = addChatMessage('학교 일정을 가져오고 있습니다...', 'ai');
+
+    try {
+        const response = await fetch('/api/crawl/schedule', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ id, pw }),
+            credentials: 'include'
+        });
+
+        if (response.status === 401) {
+            setStatusMessage(statusMessage, '학교 일정 조회를 위해 구글 로그인이 필요합니다.');
+            setTimeout(() => {
+                window.location.href = '/oauth2/authorization/google';
+            }, 1000);
+            return;
+        }
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        await consumeSseResponse(response, {
+            status: message => setStatusMessage(statusMessage, message),
+            complete: message => setStatusMessage(statusMessage, message),
+            error: message => setStatusMessage(statusMessage, message)
+        });
+
+        ui.studentIdInput.value = '';
+        ui.studentPasswordInput.value = '';
+    } catch (error) {
+        console.error(error);
+        setStatusMessage(statusMessage);
+    }
+}
+
+
+/* =========================
+   이벤트 바인딩
+========================= */
+
+function bindUiEvents() {
+    ui.enterButton.addEventListener('click', enterApp);
+
+    ui.attachmentButton.addEventListener('click', () => ui.attachmentInput.click());
+    ui.attachmentInput.addEventListener('change', handleAttachmentSelection);
+    ui.composerInput.addEventListener('paste', handleComposerPaste);
+    ui.composerDropZone.addEventListener('dragover', handleComposerDragOver);
+    ui.composerDropZone.addEventListener('dragleave', handleComposerDragLeave);
+    ui.composerDropZone.addEventListener('drop', handleComposerDrop);
+
+    ui.quickMenuButton.addEventListener('click', toggleQuickMenu);
+    ui.openGoogleCalendarButton.addEventListener('click', () => {
+        closeQuickMenu();
+        openCalendar();
+    });
+    ui.crawlLoginButton.addEventListener('click', openLoginModal);
+    document.addEventListener('click', handleQuickMenuOutsideClick);
+
+    ui.sendMessageButton.addEventListener('click', callAiChat);
+
+    ui.crawlLoginCancelButton.addEventListener('click', closeLoginModal);
+    ui.crawlLoginForm.addEventListener('submit', handleCrawlLoginSubmit);
+}
+
+document.addEventListener('DOMContentLoaded', bindUiEvents);
