@@ -1,169 +1,163 @@
-from datetime import datetime, timedelta
-from fastapi import FastAPI
+from datetime import datetime
+from fastapi import FastAPI, HTTPException
 from dotenv import load_dotenv
-import os
-
 from playwright.async_api import async_playwright, TimeoutError
+from Crypto.Cipher import AES
+import os
+import re
+import base64
 
 load_dotenv(override=True)
 
 app = FastAPI()
 
+POPUP_SELECTOR = ".tui-full-calendar-popup-detail"
+EVENT_SELECTOR = ".tui-full-calendar-weekday-schedule a[href^='javascript:fnChangeStrToLink']"
+
+
+async def close_popup_if_open(page):
+    popup = page.locator(POPUP_SELECTOR)
+
+    if await popup.count() == 0 or not await popup.is_visible():
+        return
+
+    await page.click('h2:has-text("학습일정")')
+    await page.wait_for_selector(POPUP_SELECTOR, state="hidden", timeout=3000)
+
+
 @app.post("/api/crawl/schedule")
-async def crawl_schedule(
-        req: dict
-):
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)  # 브라우저 눈으로 확인하려면 False
-        page = await browser.new_page()
+async def crawl_schedule(req: dict):
+    try:
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            page = await browser.new_page()
 
-        # 사이트 열기
-        # page.goto("https://cyber.mjc.ac.kr/home/mainHome/Form/main")
-        await page.goto(
-            "https://cyber.mjc.ac.kr/home/mainHome/Form/main",
-            wait_until="networkidle",
-            timeout=60000  # 60초로 늘림
-        )
+            await page.goto(
+                "https://cyber.mjc.ac.kr/home/mainHome/Form/main",
+                wait_until="networkidle",
+                timeout=60000
+            )
 
-        close_btn = page.locator("#closeButton1")
+            close_btn = page.locator("#closeButton1")
+            if await close_btn.count() > 0:
+                await close_btn.click()
 
-        if await close_btn.count() > 0:
-            await close_btn.click()
+            await page.wait_for_selector('input[name="id"]')
 
-        # 아이디 입력 필드가 나타날 때까지 기다림
-        await page.wait_for_selector('input[name="id"]')
+            aes_key = os.getenv("AES_KEY")
+            await page.fill('input[name="id"]', decrypt(aes_key, req.get("cryptId")))
+            await page.fill('input[name="password"]', decrypt(aes_key, req.get("cryptPw")))
 
-        aes_key = os.getenv("AES_KEY")
-        # 아이디, 비밀번호 입력
-        await page.fill('input[name="id"]', decrypt(aes_key, req.get("cryptId")))
-        await page.fill('input[name="password"]', decrypt(aes_key, req.get("cryptPw")))
+            await page.click('div#btnLogin')
+            await page.wait_for_timeout(1500)
 
-        # 로그인 버튼 클릭
-        await page.click('div#btnLogin')
-        await page.wait_for_timeout(2000)
+            note_box = page.locator("#note-box.warning")
+            if await note_box.count() > 0 and await note_box.is_visible():
+                error_text = (await note_box.locator("p").inner_text()).strip()
+                if "아이디 또는 암호가 맞지 않습니다" in error_text:
+                    raise HTTPException(status_code=400, detail="아이디 또는 비밀번호가 올바르지 않습니다.")
 
-        await page.context.storage_state(path="mjc_state.json")
+            await page.goto(
+                "https://cyber.mjc.ac.kr/home/mainHome/Form/schCalendar",
+                wait_until="networkidle",
+                timeout=60000
+            )
 
-        await page.goto(
-            "https://cyber.mjc.ac.kr/home/mainHome/Form/schCalendar",
-            wait_until="networkidle",
-            timeout=60000
-        )
-        await page.click('span.ui.selection.fluid.dropdown')
-        await page.wait_for_selector('li[data-action="toggle-weekly"]')
-        await page.click('li[data-action="toggle-weekly"]')
-        await page.wait_for_timeout(1000)
+            await page.click('span.ui.selection.fluid.dropdown')
+            await page.wait_for_selector('li[data-action="toggle-weekly"]')
+            await page.click('li[data-action="toggle-weekly"]')
+            await page.wait_for_timeout(200)
 
-        plus_btn = page.locator("span.tui-full-calendar-weekday-exceed-in-week")
-        if await plus_btn.count() > 0:
-            await plus_btn.first.click()
-        await page.wait_for_timeout(1000)
+            plus_btn = page.locator("span.tui-full-calendar-weekday-exceed-in-week")
+            if await plus_btn.count() > 0:
+                await plus_btn.first.click()
+            await page.wait_for_timeout(200)
 
-        events = page.locator(
-            ".tui-full-calendar-weekday-schedule a[href^='javascript:fnChangeStrToLink']"
-        )
-        total = await events.count()
-        print(total)
+            events = page.locator(EVENT_SELECTOR)
+            total = await events.count()
+            today = datetime.today().strftime("%Y-%m-%d")
+            results = []
 
-        today = datetime.today().strftime("%Y-%m-%d")
+            for i in range(total):
+                ev = events.nth(i)
+                await ev.scroll_into_view_if_needed()
+                await page.wait_for_timeout(100)
 
-        results = []
-
-        for i in range(total):
-            print(f"이벤트 {i+1} 처리 중")
-            ev = events.nth(i)
-            await ev.scroll_into_view_if_needed()
-
-            # info-item-box가 스크롤링 후 안정화될 때까지 잠시 대기
-            await page.wait_for_timeout(300)
-
-            try:
-                # 3. 안정화된 후 클릭 재시도
-                await ev.click(timeout=10000)
-
-            except TimeoutError as e:
-                print(f"클릭 타임아웃 발생 후 JS 강제 클릭 시도: {e}")
-                # 4. (최후의 수단) Playwright 클릭이 실패했을 경우, JavaScript를 주입하여 강제로 클릭 이벤트 발생
                 try:
-                    await ev.evaluate('element => element.click()')
-                    print("-> JavaScript를 이용한 클릭 성공")
-                except Exception as js_err:
-                    print(f"-> JavaScript 강제 클릭도 실패: {js_err}")
-                    # 이 시점에선 팝업이 열리지 않았을 것이므로 다음 루프로 이동합니다.
+                    await ev.click(timeout=10000)
+                except TimeoutError:
+                    try:
+                        await ev.evaluate("element => element.click()")
+                    except Exception:
+                        continue
+
+                await page.wait_for_selector(POPUP_SELECTOR, state="visible", timeout=10000)
+
+                title = await page.locator("span.tui-full-calendar-schedule-title a").inner_text()
+                duration = await page.locator(
+                    "div.tui-full-calendar-popup-detail-date.tui-full-calendar-content"
+                ).inner_text()
+                sub = await page.locator("span.tui-full-calendar-content").inner_text()
+
+                start_date, start_time, end_date, end_time = parse_duration(duration)
+
+                if start_date > today or end_date < today:
+                    await close_popup_if_open(page)
                     continue
 
-            # 2. 팝업이 로드될 때까지 명시적으로 대기
-            await page.wait_for_selector(".tui-full-calendar-popup-detail", state='visible')
+                results.append({
+                    "title": title,
+                    "description": sub,
+                    "start": {"date": start_date, "time": start_time},
+                    "end": {"date": end_date, "time": end_time},
+                    "reminderEnabled": True,
+                    "reminderMinutes": 30
+                })
 
-            title = await page.locator("span.tui-full-calendar-schedule-title a").inner_text()
-            duration = await page.locator("div.tui-full-calendar-popup-detail-date.tui-full-calendar-content").inner_text()
-            sub = await page.locator("span.tui-full-calendar-content").inner_text()
+                await close_popup_if_open(page)
 
-            if parse_duration(duration)[2] < today:
-                continue
+            await browser.close()
 
-            start_date, start_time = parse_duration(duration)[0], parse_duration(duration)[1]
-            end_date, end_time = parse_duration(duration)[2], parse_duration(duration)[3]
+        if not results:
+            raise HTTPException(status_code=404, detail="가져올 학교 일정이 없습니다.")
 
-            results.append({
-                "title": title,
-                "description": sub,
-                "start": {
-                    "date": start_date,
-                    "time": start_time,
-                },
-                "end": {
-                    "date": end_date,
-                    "time": end_time,
-                }
-            })
+        return results
 
-            print(f"{i+1} 안전 영역(학습일정 제목) 클릭하여 팝업 닫기 시도")
-            await page.click('h2:has-text("학습일정")')
-
-            # 팝업이 사라지는 것을 확인하거나 잠시 대기
-            await page.wait_for_selector(".tui-full-calendar-popup-detail", state='hidden')
-
-    if results is None:
-        return { "error_text": "일정이 없습니다." }
-
-    print(results)
-    return results
-
-import re
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception as e:
+        print("crawl error:", e)
+        raise HTTPException(status_code=500, detail="학교 일정 연동 중 오류가 발생했습니다.")
 
 def parse_duration(duration):
-    # 2025.09.05 00:01 am - 2025.12.07 11:59 pm
-    # \d - 갯수, \s - 공백
-    patterns = {
+    patterns = [
         (
-            r"(\d{4}.\d{2}.\d{2})\s+"
+            r"(\d{4}\.\d{2}\.\d{2})\s+"
             r"(\d{2}:\d{2})\s*"
-            r"(am|pm)"
-            r"\s*-\s*"
+            r"(am|pm)\s*-\s*"
             r"(\d{4}\.\d{2}\.\d{2})\s+"
             r"(\d{2}:\d{2})\s*"
             r"(am|pm)"
         ),
         (
-            r"(\d{4}.\d{2}.\d{2})\s+"
+            r"(\d{4}\.\d{2}\.\d{2})\s+"
             r"(\d{2}:\d{2})\s*"
-            r"(am|pm)"
-            r"\s*-\s*"
+            r"(am|pm)\s*-\s*"
             r"(\d{2}:\d{2})\s*"
             r"(am|pm)"
         )
-    }
+    ]
 
     match = None
-
     for pattern in patterns:
         match = re.search(pattern, duration)
         if match:
             break
 
-    if match is None:
-        raise ValueError("Format not recognized")
+    if not match:
+        raise ValueError(f"Format not recognized: {duration}")
 
     if len(match.groups()) == 6:
         start_date, start_time, start_ampm, end_date, end_time, end_ampm = match.groups()
@@ -171,38 +165,29 @@ def parse_duration(duration):
         start_date, start_time, start_ampm, end_time, end_ampm = match.groups()
         end_date = start_date
 
-    start_date_fmt = datetime.strptime(start_date, "%Y.%m.%d").strftime("%Y-%m-%d")
-    end_date_fmt = datetime.strptime(end_date, "%Y.%m.%d").strftime("%Y-%m-%d")
+    start_date = datetime.strptime(start_date, "%Y.%m.%d").strftime("%Y-%m-%d")
+    end_date = datetime.strptime(end_date, "%Y.%m.%d").strftime("%Y-%m-%d")
 
-    st = datetime.strptime(f"{start_time}", "%H:%M")
-    et = datetime.strptime(f"{end_time}", "%H:%M")
+    start_time = to_24h(start_time, start_ampm)
+    end_time = to_24h(end_time, end_ampm)
 
-    st += timedelta(hours=0) if start_ampm == "am" else timedelta(hours=12)
-    et += timedelta(hours=0) if end_ampm == "am" else timedelta(hours=12)
+    return start_date, start_time, end_date, end_time
 
-    start_time_fmt = st.strftime("%H:%M")
-    end_time_fmt = et.strftime("%H:%M")
 
-    return start_date_fmt, start_time_fmt, end_date_fmt, end_time_fmt
+def to_24h(time_str, ampm):
+    hour, minute = map(int, time_str.split(":"))
 
-from Crypto.Cipher import AES
-import base64
+    if ampm == "am":
+        if hour == 12:
+            hour = 0
+    else:
+        if hour != 12:
+            hour += 12
+
+    return f"{hour:02d}:{minute:02d}"
+
 
 def decrypt(key: str, encrypted: str) -> str:
-    # key는 16, 24, 32 바이트 중 하나여야 함
-    key_bytes = key.encode('utf-8')
-
-    # AES ECB 모드
-    cipher = AES.new(key_bytes, AES.MODE_ECB)
-
-    # Base64 디코딩
-    encrypted_bytes = base64.b64decode(encrypted)
-
-    # 복호화
-    decrypted_bytes = cipher.decrypt(encrypted_bytes)
-
-    # PKCS5/PKCS7 padding 제거
-    pad_len = decrypted_bytes[-1]
-    decrypted_bytes = decrypted_bytes[:-pad_len]
-
-    return decrypted_bytes.decode('utf-8')
+    cipher = AES.new(key.encode("utf-8"), AES.MODE_ECB)
+    decrypted = cipher.decrypt(base64.b64decode(encrypted))
+    return decrypted[:-decrypted[-1]].decode("utf-8")
