@@ -128,7 +128,6 @@ async def crawl_schedule(req: dict):
     except HTTPException:
         raise
     except Exception as e:
-        print("crawl error:", e)
         raise HTTPException(status_code=500, detail="학교 일정 연동 중 오류가 발생했습니다.")
 
 def parse_duration(duration):
