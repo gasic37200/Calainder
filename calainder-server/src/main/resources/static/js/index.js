@@ -22,6 +22,8 @@
     crawlLoginCancelButton: document.getElementById('crawlLoginCancelButton')
 };
 
+const SUPPORTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+
 /* =========================
    기본 UI 유틸
 ========================= */
@@ -54,7 +56,7 @@ function updateChatMessage(message, text) {
 }
 
 function showLoadingMessage() {
-    addChatMessage('AI가 일정을 분석하고 있어요...', 'ai');
+    return addChatMessage('AI가 일정을 분석하고 있어요...', 'ai');
 }
 
 function showToast(text) {
@@ -76,7 +78,7 @@ async function readJsonResponse(response) {
 async function readErrorMessage(response, fallbackMessage) {
     try {
         const errorBody = await readJsonResponse(response);
-        return errorBody.message || fallbackMessage;
+        return errorBody.message || errorBody.detail || fallbackMessage;
     } catch (error) {
         return fallbackMessage;
     }
@@ -85,6 +87,20 @@ async function readErrorMessage(response, fallbackMessage) {
 // 내 구글캘린더로 이동
 function openCalendar() {
     window.open('https://calendar.google.com/', '_blank');
+}
+
+function redirectToGoogleLogin(message = null) {
+    const text = '구글 로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다.';
+
+    if (message) {
+        updateChatMessage(message, text);
+    } else {
+        addChatMessage(text, 'ai');
+    }
+
+    setTimeout(() => {
+        window.location.href = '/oauth2/authorization/google';
+    }, 1000);
 }
 
 function formatScheduleDateTime(scheduleDateTime) {
@@ -116,12 +132,13 @@ function getReminderSummary(dto) {
 
 let selectedAttachment = null; // 선택한 첨부이미지
 let attachmentPreviewUrl = null; // 프리뷰에 올릴 첨부이미지 url
+let isAiRequesting = false; // AI 요청 중 중복 전송 방지
 
 // 첨부이미지 올릴 시 생성되는 프리뷰
 function renderAttachmentPreview(file) {
     ui.attachmentPreview.innerHTML = '';
 
-    // 파일이 ㅅ
+    // 파일이 선택되지 않으면 숨기기
     if (!file) {
         ui.attachmentPreview.hidden = true;
         return;
@@ -180,8 +197,8 @@ function clearAttachment() {
 }
 
 function setSelectedAttachment(file) {
-    if (!file || !file.type.startsWith('image/')) {
-        showToast('이미지 파일만 업로드할 수 있습니다.');
+    if (!file || !SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+        showToast('JPG, PNG, GIF, WEBP 이미지만 업로드할 수 있습니다.');
         return;
     }
 
@@ -241,8 +258,8 @@ function handleComposerDrop(event) {
 
     // 드래그해서 놓은 파일 목록 중 첫 번째 파일 하나를 가져옴
     const file = event.dataTransfer?.files?.[0];
-    if (!file || !file.type.startsWith('image/')) {
-        showToast('이미지 파일만 업로드할 수 있습니다.');
+    if (!file || !SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+        showToast('JPG, PNG, GIF, WEBP 이미지만 업로드할 수 있습니다.');
         return;
     }
 
@@ -602,8 +619,14 @@ function finalizeCardAsSaved(card, savedSchedule) {
    - 일정 조회
 ========================= */
 
-function renderLookupSchedules(schedules) {
-    addChatMessage(`조회된 일정 ${schedules.length}건입니다.`, 'ai');
+function renderLookupSchedules(schedules, message = null) {
+    const resultMessage = `조회된 일정 ${schedules.length}건입니다.`;
+
+    if (message) {
+        updateChatMessage(message, resultMessage);
+    } else {
+        addChatMessage(resultMessage, 'ai');
+    }
 
     const lookupGroup = document.createElement('div');
     lookupGroup.className = 'lookup-results';
@@ -652,10 +675,29 @@ function renderLookupSchedules(schedules) {
 }
 
 async function callAiChat() {
-    showLoadingMessage();
+    if (isAiRequesting) {
+        return;
+    }
 
     const prompt = ui.composerInput.value.trim();
     const formData = new FormData();
+    let statusMessage = null;
+
+    if (!prompt && !selectedAttachment) {
+        addChatMessage('일정 내용이나 이미지를 입력해주세요.', 'ai');
+        return;
+    }
+
+    isAiRequesting = true;
+    ui.sendMessageButton.disabled = true;
+
+    if (prompt && selectedAttachment) {
+        addChatMessage(`첨부 이미지: ${selectedAttachment.name}\n${prompt}`, 'user');
+    } else if (prompt) {
+        addChatMessage(prompt, 'user');
+    } else if (selectedAttachment) {
+        addChatMessage(`첨부 이미지: ${selectedAttachment.name}`, 'user');
+    }
 
     if (prompt) {
         formData.append('prompt', prompt);
@@ -665,7 +707,10 @@ async function callAiChat() {
         formData.append('image', selectedAttachment);
     }
 
+    statusMessage = showLoadingMessage();
+
     ui.composerInput.value = '';
+    clearAttachment();
 
     try {
         const response = await fetch('/api/ai/schedule', {
@@ -675,33 +720,36 @@ async function callAiChat() {
         });
 
         if (response.status === 401) {
-            addChatMessage('구글 로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다.', 'ai');
-            setTimeout(() => {
-                window.location.href = '/oauth2/authorization/google';
-            }, 1000);
+            redirectToGoogleLogin(statusMessage);
             return;
         }
 
         if (!response.ok) {
-            throw new Error(await readErrorMessage(response, '요청 처리 중 오류가 발생했습니다.'));
+            updateChatMessage(statusMessage, await readErrorMessage(response, '요청 처리 중 오류가 발생했습니다.'));
+            return;
         }
 
         const schedules = await readJsonResponse(response);
         const isCreate = schedules[0]?.intent === 'create';
 
         if (isCreate) {
-            addChatMessage('일정 초안이 생성되었습니다. 확인 후 추가할 수 있습니다.', 'ai');
+            updateChatMessage(statusMessage, '일정 초안이 생성되었습니다.\n확인 후 추가할 수 있습니다.');
             schedules.forEach((schedule) => {
                 createEventCard(schedule, { status: 'draft' });
             });
         } else {
-            renderLookupSchedules(schedules);
+            renderLookupSchedules(schedules, statusMessage);
         }
-
-        clearAttachment();
     } catch (error) {
         console.error(error);
-        addChatMessage(error.message || '요청 처리 중 오류가 발생했습니다.', 'ai');
+        if (statusMessage) {
+            updateChatMessage(statusMessage, error.message || '요청 처리 중 오류가 발생했습니다.');
+        } else {
+            addChatMessage(error.message || '요청 처리 중 오류가 발생했습니다.', 'ai');
+        }
+    } finally {
+        isAiRequesting = false;
+        ui.sendMessageButton.disabled = false;
     }
 }
 
@@ -722,21 +770,19 @@ async function confirmDraftSchedule(card) {
         });
 
         if (response.status === 401) {
-            addChatMessage('구글 로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다.', 'ai');
-            setTimeout(() => {
-                window.location.href = '/oauth2/authorization/google';
-            }, 1000);
+            redirectToGoogleLogin();
             return;
         }
 
         if (!response.ok) {
-            throw new Error(await readErrorMessage(response, '일정 추가 중 오류가 발생했습니다.'));
+            addChatMessage(await readErrorMessage(response, '일정 추가 중 오류가 발생했습니다.'), 'ai');
+            return;
         }
 
         const savedSchedule = await readJsonResponse(response);
         finalizeCardAsSaved(card, savedSchedule);
         addChatMessage('일정을 구글 캘린더에 등록했습니다.', 'ai');
-        showToast('구글 캘린더에 일정이 추가되었습니다.');
+        // showToast('구글 캘린더에 일정이 추가되었습니다.');
     } catch (error) {
         console.error(error);
         addChatMessage(error.message || '일정 추가 중 오류가 발생했습니다.', 'ai');
@@ -766,15 +812,13 @@ async function saveCardEdit(card) {
         });
 
         if (response.status === 401) {
-            addChatMessage('구글 로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다.', 'ai');
-            setTimeout(() => {
-                window.location.href = '/oauth2/authorization/google';
-            }, 1000);
+            redirectToGoogleLogin();
             return;
         }
 
         if (!response.ok) {
-            throw new Error(await readErrorMessage(response, '일정 수정 중 오류가 발생했습니다.'));
+            addChatMessage(await readErrorMessage(response, '일정 수정 중 오류가 발생했습니다.'), 'ai');
+            return;
         }
 
         const updated = await readJsonResponse(response);
@@ -803,15 +847,13 @@ async function deleteEvent(eventId) {
         });
 
         if (response.status === 401) {
-            addChatMessage('구글 로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다.', 'ai');
-            setTimeout(() => {
-                window.location.href = '/oauth2/authorization/google';
-            }, 1000);
+            redirectToGoogleLogin();
             return;
         }
 
         if (!response.ok) {
-            throw new Error(await readErrorMessage(response, '일정 삭제 중 오류가 발생했습니다.'));
+            addChatMessage(await readErrorMessage(response, '일정 삭제 중 오류가 발생했습니다.'), 'ai');
+            return;
         }
 
         document.querySelectorAll(`.schedule-card[data-id="${eventId}"]`).forEach((card) => card.remove());
@@ -892,9 +934,9 @@ function parseSseBlock(block) {
     return event;
 }
 
-function setStatusMessage(messageElement, text) {
-    updateChatMessage(messageElement, text || '학교 일정 연동 중 오류가 발생했습니다.');
-}
+// function setStatusMessage(messageElement, text) {
+//     updateChatMessage(messageElement, text || '학교 일정 연동 중 오류가 발생했습니다.');
+// }
 
 async function handleCrawlLoginSubmit(event) {
     event.preventDefault();
@@ -916,28 +958,27 @@ async function handleCrawlLoginSubmit(event) {
         });
 
         if (response.status === 401) {
-            setStatusMessage(statusMessage, '학교 일정 조회를 위해 구글 로그인이 필요합니다.');
-            setTimeout(() => {
-                window.location.href = '/oauth2/authorization/google';
-            }, 1000);
+            redirectToGoogleLogin();
             return;
         }
 
         if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
+            updateChatMessage(statusMessage, await readErrorMessage(response, '학교 일정 연동 중 오류가 발생했습니다.'));
+            return;
         }
 
+        // 실시간 메세지를 위한 sse 핸들러
         await consumeSseResponse(response, {
-            status: message => setStatusMessage(statusMessage, message),
-            complete: message => setStatusMessage(statusMessage, message),
-            error: message => setStatusMessage(statusMessage, message)
+            status: message => updateChatMessage(statusMessage, message),
+            complete: message => updateChatMessage(statusMessage, message),
+            error: message => updateChatMessage(statusMessage, message)
         });
 
         ui.studentIdInput.value = '';
         ui.studentPasswordInput.value = '';
     } catch (error) {
         console.error(error);
-        setStatusMessage(statusMessage);
+        setStatusMessage(statusMessage, error.message);
     }
 }
 

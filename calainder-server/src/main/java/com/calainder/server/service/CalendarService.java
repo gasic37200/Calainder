@@ -32,27 +32,29 @@ public class CalendarService {
     }
 
     public List<ScheduleDTO> lookupEvent(ScheduleDTO req, OAuth2AuthorizedClient authorizedClient) throws Exception {
-        Calendar service = getCalendarService(authorizedClient);
+		Calendar service = getCalendarService(authorizedClient);
 
-        try {
-            Event event = req.toGoogleEvent();
-            Events events = service.events().list("primary")
-                    .setTimeMin(event.getStart().getDateTime())
-                    .setTimeMax(event.getEnd().getDateTime())
-                    .setSingleEvents(true)
-                    .setOrderBy("startTime")
-                    .execute();
+		try {
+			Event event = req.toGoogleEvent();
+			Events events = service.events().list("primary")
+					.setTimeMin(event.getStart().getDateTime())
+					.setTimeMax(event.getEnd().getDateTime())
+					.setSingleEvents(true)
+					.setOrderBy("startTime")
+					.execute();
 
 			if (events.getItems() == null || events.getItems().isEmpty()) {
 				throw new IllegalArgumentException("조회된 일정이 없습니다.");
 			}
 
-            List<ScheduleDTO> result = new ArrayList<>();
-            for (Event e : events.getItems()) {
-                result.add(new ScheduleDTO().toScheduleDTO(e));
-            }
-            return result;
-        } catch (Exception e) {
+			List<ScheduleDTO> result = new ArrayList<>();
+			for (Event e : events.getItems()) {
+				result.add(new ScheduleDTO().toScheduleDTO(e));
+			}
+			return result;
+		} catch (IllegalArgumentException e) {
+			throw e;
+		} catch (Exception e) {
             throw new IllegalStateException("구글 캘린더 일정 조회에 실패하였습니다.", e);
         }
     }

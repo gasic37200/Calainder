@@ -1,19 +1,23 @@
 import base64
-from openai import OpenAI
-from fastapi import FastAPI, File, UploadFile, Form
+from openai import BadRequestError, OpenAI
+from fastapi import FastAPI, File, HTTPException, UploadFile, Form
 import os
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 import json
+import logging
 
 load_dotenv(override=True)  # .env 읽어오기
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = FastAPI()
+logger = logging.getLogger(__name__)
+
+SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
 
 today = datetime.now().date()
-createId = datetime.now().strftime("%Y%m%d%H%M%S%f")
+# createId = datetime.now().strftime("%Y%m%d%H%M%S%f")
 developer_text = f"""
             오늘은 {today}입니다.
             
@@ -84,9 +88,6 @@ developer_text = f"""
             코드블록 사용 금지.
         """
 
-
-
-
 @app.post("/api/ai/schedule/text")
 async def text_schedule(data: dict):
     prompt = data["prompt"]
@@ -122,8 +123,10 @@ async def text_schedule(data: dict):
     try:
         parsed = json.loads(result_text)
     except:
-        # GPT가 JSON 구조를 유지 못 했을 경우 대비
-        parsed = {"raw_text": result_text}
+        raise HTTPException(
+            status_code=400,
+            detail="일정 분석에 실패하였습니다."
+        )
 
     print(parsed)
 
@@ -138,43 +141,60 @@ async def image_schedule(
     print("prompt:", prompt)
     print("image:", image.filename if image else None)
 
+    if image.content_type not in SUPPORTED_IMAGE_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="지원하지 않는 이미지 형식입니다. JPG, PNG, GIF, WEBP 파일만 업로드할 수 있습니다."
+        )
 
     # 이미지 raw bytes
     image_bytes = await image.read()
+    if not image_bytes:
+        raise HTTPException(status_code=400, detail="이미지 파일이 비어 있습니다.")
 
     # base64 변환(binary -> byte -> string)
     encoded_image = base64.b64encode(image_bytes).decode("utf-8")
     # url 생성
     data_url = f"data:{image.content_type};base64,{encoded_image}"
 
-    response = client.responses.create(
-        model="gpt-4o-mini",
-        input=[
-            {
-                "role": "developer",
-                "content": [
-                    {
-                        "type": "input_text",
-                        "text": developer_text
-                    }
-                ]
-            },
-            {
-                "role": "user",
-                "content": [
-                    {"type": "input_text", "text": prompt or ""},
-                    {"type": "input_image", "image_url": data_url},
-                ]
-            }
-        ]
-    )
+    try:
+        response = client.responses.create(
+            model="gpt-4o-mini",
+            input=[
+                {
+                    "role": "developer",
+                    "content": [
+                        {
+                            "type": "input_text",
+                            "text": developer_text
+                        }
+                    ]
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {"type": "input_text", "text": prompt or ""},
+                        {"type": "input_image", "image_url": data_url},
+                    ]
+                }
+            ]
+        )
+    except BadRequestError as e:
+        logger.warning("OpenAI image analysis request failed: %s", e)
+        raise HTTPException(
+            status_code=400,
+            detail="이미지를 분석할 수 없습니다.\n시간, 날짜, 일정 내용이 보이는 이미지인지 확인해주세요."
+        )
 
     result_text = response.output_text
 
     try:
         parsed = json.loads(result_text)
     except:
-        parsed = {"raw_text": result_text}
+        raise HTTPException(
+            status_code=400,
+            detail="일정 분석에 실패하였습니다."
+        )
 
     print(parsed)
 
