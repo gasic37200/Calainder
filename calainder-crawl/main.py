@@ -6,6 +6,7 @@ from Crypto.Cipher import AES
 import os
 import re
 import base64
+import traceback
 
 load_dotenv(override=True)
 
@@ -128,6 +129,8 @@ async def crawl_schedule(req: dict):
     except HTTPException:
         raise
     except Exception as e:
+        print("crawl error:", repr(e), flush=True)
+        traceback.print_exc()
         raise HTTPException(status_code=500, detail="학교 일정 연동 중 오류가 발생했습니다.")
 
 def parse_duration(duration):
