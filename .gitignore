@@ -16,14 +16,12 @@ storage_state*.json
 ### Spring Boot ###
 target/
 *.jar
+!**/gradle/wrapper/gradle-wrapper.jar
 *.war
 .gradle/
 build/
 
 ### Spring 민감 정보 ###
-**/application.yml
-**/application-*.yml
-!**/application.yml.example
 **/credentials.json
 tokens/
 

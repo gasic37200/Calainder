@@ -4,9 +4,9 @@ import com.calainder.server.dto.ScheduleDTO;
 import com.calainder.server.service.CalendarService;
 import com.calainder.server.service.FastApiService;
 import com.calainder.server.util.CryptUtil;
-import io.github.cdimascio.dotenv.Dotenv;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
@@ -26,7 +26,8 @@ public class CrawlController {
     private final FastApiService fastApiService;
     private final CalendarService calendarService;
 
-    Dotenv dotenv = Dotenv.load();
+	@Value("${aes.key}")
+	private String aesKey;
 
     @PostMapping(value = "/api/crawl/schedule", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter crawlSchedule(
@@ -39,8 +40,8 @@ public class CrawlController {
             try {
                 sendEvent(emitter, "status", "학교 일정 크롤링을 시작하겠습니다.");
 
-                String cryptId = CryptUtil.encrypt(dotenv.get("AES_KEY"), body.get("id"));
-                String cryptPw = CryptUtil.encrypt(dotenv.get("AES_KEY"), body.get("pw"));
+                String cryptId = CryptUtil.encrypt(aesKey, body.get("id"));
+                String cryptPw = CryptUtil.encrypt(aesKey, body.get("pw"));
 
                 Map<String, Object> data = new HashMap<>();
                 data.put("cryptId", cryptId);

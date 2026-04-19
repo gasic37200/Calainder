@@ -14,6 +14,7 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.io.IOException;
 import java.util.Map;
@@ -23,6 +24,11 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Slf4j
 public class FastApiService {
+	@Value("${fastapi.ai-base-url:http://localhost:8000}")
+	private String aiBaseUrl;
+	@Value("${fastapi.crawl-base-url:http://localhost:9000}")
+	private String crawlBaseUrl;
+
     private static final Set<String> SUPPORTED_IMAGE_TYPES = Set.of(
             "image/jpeg",
             "image/png",
@@ -74,7 +80,7 @@ public class FastApiService {
 
         try {
             return restTemplate.postForObject(
-                    "http://localhost:8000/api/ai/schedule/image",
+					aiBaseUrl + "/api/ai/schedule/image",
                     requestEntity,
                     ScheduleDTO.class
             );
@@ -93,7 +99,7 @@ public class FastApiService {
 
         try {
             return restTemplate.postForObject(
-                    "http://localhost:8000/api/ai/schedule/text",
+					aiBaseUrl + "/api/ai/schedule/text",
                     request,
                     ScheduleDTO.class
             );
@@ -111,7 +117,7 @@ public class FastApiService {
 
         try {
             return restTemplate.postForObject(
-                    "http://localhost:9000/api/crawl/schedule",
+					crawlBaseUrl + "/api/crawl/schedule",
                     request,
                     ScheduleDTO[].class
             );

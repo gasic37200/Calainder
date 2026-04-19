@@ -1,6 +1,5 @@
-playwright
-requests
-dotenv
-datetime
 fastapi
+uvicorn[standard]
+python-dotenv
+playwright==1.58.0
 pycryptodome
