@@ -13,4 +13,14 @@ public class CommonController {
 		return "index";
 	}
 
+	@GetMapping("/privacy")
+	public String privacy() {
+		return "privacy";
+	}
+
+	@GetMapping("/terms")
+	public String terms() {
+		return "terms";
+	}
+
 }
