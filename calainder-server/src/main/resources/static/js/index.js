@@ -90,7 +90,7 @@ function openCalendar() {
 }
 
 function redirectToGoogleLogin(message = null) {
-    const text = '구글 로그인이 필요합니다. 잠시 후 로그인 페이지로 이동합니다.';
+    const text = '구글 로그인이 필요합니다.\n잠시 후 로그인 페이지로 이동합니다.';
 
     if (message) {
         updateChatMessage(message, text);
@@ -101,6 +101,19 @@ function redirectToGoogleLogin(message = null) {
     setTimeout(() => {
         window.location.href = '/oauth2/authorization/google';
     }, 1000);
+}
+
+async function ensureLoggedIn() {
+    const response = await fetch('/api/auth/status', {
+        credentials: 'include'
+    });
+
+    if (response.status === 401) {
+        redirectToGoogleLogin();
+        return false;
+    }
+
+    return response.ok;
 }
 
 function formatScheduleDateTime(scheduleDateTime) {
@@ -1005,7 +1018,11 @@ function bindUiEvents() {
     ui.crawlLoginButton.addEventListener('click', openLoginModal);
     document.addEventListener('click', handleQuickMenuOutsideClick);
 
-    ui.sendMessageButton.addEventListener('click', callAiChat);
+    ui.sendMessageButton.addEventListener('click', async () => {
+        if (await ensureLoggedIn()) {
+            await callAiChat();
+        }
+    });
 
     ui.crawlLoginCancelButton.addEventListener('click', closeLoginModal);
     ui.crawlLoginForm.addEventListener('submit', handleCrawlLoginSubmit);
