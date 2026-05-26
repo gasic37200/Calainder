@@ -2,7 +2,7 @@ package com.calainder.server.controller;
 
 import com.calainder.server.dto.ScheduleDTO;
 import com.calainder.server.service.CalendarService;
-import com.calainder.server.service.FastApiService;
+import com.calainder.server.service.ScheduleService;
 import com.calainder.server.util.CryptUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +23,11 @@ import java.util.concurrent.CompletableFuture;
 @RequiredArgsConstructor
 @Slf4j
 public class CrawlController {
-    private final FastApiService fastApiService;
+    private final ScheduleService scheduleService;
     private final CalendarService calendarService;
 
-	@Value("${aes.key}")
-	private String aesKey;
+    @Value("${aes.key}")
+    private String aesKey;
 
     @PostMapping(value = "/api/crawl/schedule", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public SseEmitter crawlSchedule(
@@ -48,12 +48,12 @@ public class CrawlController {
                 data.put("cryptPw", cryptPw);
 
                 sendEvent(emitter, "status", "학교 사이트에 접속해 일정을 확인하고 있습니다.");
-                ScheduleDTO[] schedules = fastApiService.callFastApi(data);
+                ScheduleDTO[] schedules = scheduleService.crawlSchedule(data);
 
                 sendEvent(
                         emitter,
                         "status",
-                        String.format("학교 일정 %d건을 가져왔습니다.\n구글 캘린더에 반영하고 있습니다.", schedules.length)
+                        String.format("학교 일정 %d건을 가져왔습니다.\nGoogle Calendar에 반영하고 있습니다.", schedules.length)
                 );
 
                 for (int i = 0; i < schedules.length; i++) {

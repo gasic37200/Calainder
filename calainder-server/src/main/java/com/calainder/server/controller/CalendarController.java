@@ -8,6 +8,7 @@ import org.springframework.security.oauth2.client.OAuth2AuthorizedClient;
 import org.springframework.security.oauth2.client.annotation.RegisteredOAuth2AuthorizedClient;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RequiredArgsConstructor
@@ -15,6 +16,12 @@ import java.util.Map;
 public class CalendarController {
 
     private final CalendarService calendarService;
+
+    @PostMapping("/api/calendar/lookup")
+    public List<ScheduleDTO> lookupEvent(@RequestBody ScheduleDTO req,
+                                         @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
+        return calendarService.lookupEvent(req, authorizedClient);
+    }
 
     @PostMapping("/api/calendar/events")
     public ScheduleDTO addEvent(@RequestBody ScheduleDTO req,

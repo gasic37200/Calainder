@@ -6,16 +6,20 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile, Body
 from openai import BadRequestError, OpenAI
 
 from prompts import build_image_prompt, build_text_prompt
 
-load_dotenv(override=True)
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = FastAPI()
+
+load_dotenv(override=True)
+
+MODEL_NAME = "gpt-5-chat-latest"
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 logger = logging.getLogger(__name__)
 
 SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
@@ -26,8 +30,6 @@ def get_prompt_context() -> tuple[str, str]:
     today = str(now.date())
     current_datetime = now.strftime("%Y-%m-%d %H:%M")
     return today, current_datetime
-
-
 
 def parse_response_json(result_text: str):
     try:
@@ -41,11 +43,8 @@ def parse_response_json(result_text: str):
 
 
 @app.post("/api/ai/schedule/text")
-async def text_schedule(data: dict):
-    prompt = data["prompt"]
+async def text_schedule(prompt: str = Body(..., embed=True)):
     today, current_datetime = get_prompt_context()
-    print("today:", today)
-    print("current_datetime:", current_datetime)
     developer_text = build_text_prompt(today, current_datetime)
 
     response = client.responses.create(
@@ -79,7 +78,7 @@ async def text_schedule(data: dict):
 
 @app.post("/api/ai/schedule/image")
 async def image_schedule(
-    prompt: str = Form(None),
+    prompt: str = Form(""),
     image: UploadFile = File(...),
 ):
     print("prompt:", prompt)

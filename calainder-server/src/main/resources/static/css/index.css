@@ -4,6 +4,7 @@
     background: #f5f6f7;
     color: #111827;
     height: 100vh;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -845,5 +846,274 @@
 
     .quick-menu__item {
         min-width: 160px;
+    }
+}
+
+@media (max-width: 640px) {
+    body.app-shell {
+        background: #f7f8fa;
+    }
+
+    .app-splash {
+        padding: 28px 22px calc(28px + env(safe-area-inset-bottom));
+        justify-content: center;
+    }
+
+    .app-splash__title {
+        margin-bottom: 14px;
+        font-size: 34px;
+        line-height: 1.1;
+    }
+
+    .app-splash__description {
+        max-width: 320px;
+        margin-bottom: 32px;
+        font-size: 15px;
+        line-height: 1.65;
+    }
+
+    .app-splash__enter {
+        width: 56px;
+        height: 56px;
+        border-radius: 999px;
+        background: #111827;
+        color: #ffffff;
+        font-size: 28px;
+        line-height: 1;
+    }
+
+    .app-splash__legal {
+        right: 0;
+        left: 0;
+        bottom: calc(16px + env(safe-area-inset-bottom));
+        justify-content: center;
+        font-size: 11px;
+    }
+
+    .app-header {
+        padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+        font-size: 15px;
+        box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+    }
+
+    .chat-feed {
+        gap: 14px;
+        padding: 14px 12px 16px;
+    }
+
+    .chat-message {
+        max-width: 86%;
+        padding: 12px 14px;
+        border-radius: 14px;
+        font-size: 14px;
+        line-height: 1.55;
+        overflow-wrap: anywhere;
+    }
+
+    .chat-message--ai {
+        border-top-left-radius: 6px;
+    }
+
+    .chat-message--user {
+        border-top-right-radius: 6px;
+    }
+
+    .schedule-card,
+    .lookup-results {
+        width: 100%;
+        align-self: stretch;
+    }
+
+    .schedule-card {
+        padding: 16px;
+        border-radius: 14px;
+        box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08);
+    }
+
+    .schedule-card__title {
+        margin-bottom: 12px;
+        font-size: 16px;
+    }
+
+    .schedule-card__body {
+        gap: 12px;
+    }
+
+    .schedule-card__label {
+        font-size: 13px;
+    }
+
+    .schedule-card__value,
+    .schedule-card__input {
+        font-size: 14px;
+    }
+
+    .schedule-card__datetime-editor {
+        gap: 8px;
+    }
+
+    .schedule-card__reminder-editor {
+        gap: 10px;
+    }
+
+    .schedule-card__minutes {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .schedule-card__input--minutes {
+        width: 96px;
+    }
+
+    .schedule-card__actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+        margin-top: 16px;
+    }
+
+    .schedule-card__button {
+        min-height: 42px;
+        padding: 10px 12px;
+        border-radius: 10px;
+        font-size: 14px;
+    }
+
+    .lookup-results {
+        gap: 8px;
+    }
+
+    .lookup-results__item {
+        min-height: 44px;
+        padding: 10px 12px;
+        border-radius: 10px;
+    }
+
+    .lookup-results__text {
+        font-size: 13px;
+    }
+
+    .chat-composer {
+        gap: 8px;
+        padding: 10px 10px calc(10px + env(safe-area-inset-bottom));
+        box-shadow: 0 -1px 8px rgba(15, 23, 42, 0.08);
+    }
+
+    .chat-composer__preview {
+        flex-wrap: nowrap;
+        gap: 8px;
+        overflow-x: auto;
+        padding-bottom: 2px;
+    }
+
+    .chat-composer__preview-item {
+        width: 72px;
+        height: 72px;
+        border-radius: 12px;
+    }
+
+    .chat-composer__row {
+        gap: 8px;
+        align-items: flex-end;
+    }
+
+    .chat-composer__icon,
+    .chat-composer__submit {
+        width: 46px;
+        min-width: 46px;
+        height: 46px;
+        min-height: 46px;
+        border-radius: 12px;
+    }
+
+    .chat-composer__submit {
+        padding: 0;
+        font-size: 13px;
+    }
+
+    .chat-composer__drop-zone {
+        min-height: 46px;
+    }
+
+    .chat-composer__input {
+        height: 46px;
+        min-height: 46px;
+        max-height: 108px;
+        padding: 11px 12px;
+        border-radius: 12px;
+        font-size: 14px;
+        line-height: 1.45;
+    }
+
+    .quick-menu {
+        right: 12px;
+        bottom: calc(74px + env(safe-area-inset-bottom));
+    }
+
+    .quick-menu__panel {
+        max-width: calc(100vw - 24px);
+        padding: 8px;
+        border-radius: 14px;
+    }
+
+    .quick-menu__item {
+        min-width: 190px;
+        min-height: 44px;
+        padding: 11px 12px;
+        font-size: 13px;
+    }
+
+    .quick-menu__trigger {
+        width: 52px;
+        height: 52px;
+        font-size: 20px;
+    }
+
+    .app-toast {
+        top: calc(12px + env(safe-area-inset-top));
+        right: 12px;
+        left: 12px;
+        text-align: center;
+    }
+
+    .app-modal {
+        align-items: flex-end;
+    }
+
+    .app-modal__window {
+        width: 100%;
+        max-height: calc(100dvh - 24px);
+        padding: 22px 18px calc(18px + env(safe-area-inset-bottom));
+        border-radius: 18px 18px 0 0;
+        overflow-y: auto;
+    }
+
+    .app-modal__actions {
+        gap: 8px;
+    }
+
+    .app-modal__button {
+        flex: 1;
+        min-height: 44px;
+    }
+}
+
+@media (max-width: 380px) {
+    .chat-message {
+        max-width: 90%;
+    }
+
+    .schedule-card__actions {
+        grid-template-columns: 1fr;
+    }
+
+    .chat-composer__row {
+        gap: 6px;
+    }
+
+    .chat-composer__icon,
+    .chat-composer__submit {
+        width: 42px;
+        min-width: 42px;
     }
 }
