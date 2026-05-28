@@ -47,6 +47,9 @@ dependencies {
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // Call API
+    implementation 'org.reactivestreams:reactive-streams:1.0.4'
 }
 
 tasks.named('test') {

@@ -20,7 +20,7 @@ fastapi:
   crawl-base-url: ${FASTAPI_CRAWL_BASE_URL:http://localhost:9000}
 
 aes:
-  key: ${AES_KEY}
+    key: ${AES_KEY:1234567890123456}
 
 server:
   port: 8888
