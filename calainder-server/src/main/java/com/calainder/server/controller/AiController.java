@@ -21,12 +21,12 @@ public class AiController {
             @RequestPart(required = false) String prompt,
             @RequestPart(required = false) MultipartFile image
     ) {
-        ScheduleDTO scheduleDTO = scheduleService.analyze(prompt, image);
+        List<ScheduleDTO> schedules = scheduleService.analyze(prompt, image);
 
-        if (!scheduleDTO.isSuccess()) {
+        if (schedules.isEmpty() || schedules.stream().noneMatch(ScheduleDTO::isSuccess)) {
             throw new IllegalArgumentException("일정을 감지하지 못했습니다.");
         }
 
-        return List.of(scheduleDTO);
+        return schedules;
     }
 }

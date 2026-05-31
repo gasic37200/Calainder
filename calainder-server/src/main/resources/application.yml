@@ -19,8 +19,11 @@ fastapi:
   ai-base-url: ${FASTAPI_AI_BASE_URL:http://localhost:8000}
   crawl-base-url: ${FASTAPI_CRAWL_BASE_URL:http://localhost:9000}
 
+feedback:
+  base-url: ${FEEDBACK_API_BASE_URL:http://localhost:7000}
+
 aes:
-    key: ${AES_KEY:1234567890123456}
+    key: ${AES_KEY}
 
 server:
   port: 8888

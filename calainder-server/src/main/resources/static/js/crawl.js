@@ -2,6 +2,7 @@ import { closeLoginModal, ui } from './dom.js';
 import { showApiError } from './api.js';
 import { handleUnauthorized } from './auth.js';
 import { addChatMessage, updateChatMessage } from './chat.js';
+import { renderLookupSchedules } from './lookup.js';
 
 async function consumeSseResponse(response, handlers = {}) {
     // 결과값 없으면 오류 메세지
@@ -95,6 +96,10 @@ export async function handleCrawlLoginSubmit(event) {
         // 실시간 메세지를 위한 sse 핸들러
         await consumeSseResponse(response, {
             status: message => updateChatMessage(statusMessage, message),
+            schedules: data => {
+                const schedules = JSON.parse(data || '[]');
+                renderLookupSchedules(schedules, statusMessage);
+            },
             complete: message => updateChatMessage(statusMessage, message),
             error: message => updateChatMessage(statusMessage, message)
         });
