@@ -33,13 +33,25 @@ def get_prompt_context() -> tuple[str, str]:
 
 def parse_response_json(result_text: str):
     try:
-        return json.loads(result_text)
+        parsed = json.loads(result_text)
     except json.JSONDecodeError as exc:
         logger.warning("Failed to parse model output as JSON: %s", result_text)
         raise HTTPException(
             status_code=400,
             detail="일정 분석에 실패하였습니다."
         ) from exc
+
+    if isinstance(parsed, dict):
+        return [parsed]
+
+    if isinstance(parsed, list):
+        return parsed
+
+    logger.warning("Model output JSON is not an object or array: %s", parsed)
+    raise HTTPException(
+        status_code=400,
+        detail="일정 분석에 실패하였습니다."
+    )
 
 
 @app.post("/api/ai/schedule/text")

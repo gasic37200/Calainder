@@ -5,31 +5,29 @@ services:
     container_name: calainder-server
     ports:
       - "8888:8888"
-    environment:
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
-      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
-      AES_KEY: ${AES_KEY}
-      FASTAPI_AI_BASE_URL: http://calainder-ai:8000
-      FASTAPI_CRAWL_BASE_URL: http://calainder-crawl:9000
+    env_file:
+      - ./calainder-server/.env
     depends_on:
       - calainder-ai
       - calainder-crawl
+    restart: unless-stopped
 
   calainder-ai:
     build:
       context: ./calainder-ai
     container_name: calainder-ai
-    ports:
-      - "8000:8000"
-    environment:
-      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    expose:
+      - "8000"
+    env_file:
+      - ./calainder-ai/.env
+    restart: unless-stopped
 
   calainder-crawl:
     build:
       context: ./calainder-crawl
     container_name: calainder-crawl
-    ports:
-      - "9000:9000"
-    environment:
-      AES_KEY: ${AES_KEY}
+    expose:
+      - "9000"
+    env_file:
+      - ./calainder-crawl/.env
+    restart: unless-stopped

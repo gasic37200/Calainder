@@ -6,6 +6,7 @@ from Crypto.Cipher import AES
 import os
 import re
 import base64
+import hashlib
 import traceback
 
 load_dotenv(override=True)
@@ -50,7 +51,7 @@ async def crawl_schedule(req: dict):
             await page.fill('input[name="password"]', decrypt(aes_key, req.get("cryptPw")))
 
             await page.click('div#btnLogin')
-            await page.wait_for_timeout(1500)
+            await page.wait_for_timeout(1000)
 
             note_box = page.locator("#note-box.warning")
             if await note_box.count() > 0 and await note_box.is_visible():
@@ -107,6 +108,7 @@ async def crawl_schedule(req: dict):
                     continue
 
                 results.append({
+                    "id": make_calendar_event_id(sub, title),
                     "title": title,
                     "description": sub,
                     "start": {"date": start_date, "time": start_time},
@@ -187,6 +189,16 @@ def to_24h(time_str, ampm):
             hour += 12
 
     return f"{hour:02d}:{minute:02d}"
+
+
+def make_calendar_event_id(sub, title):
+    raw = f"calainder-crawl|{normalize_text(sub)}|{normalize_text(title)}"
+    digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:32]
+    return f"calainder{digest}"
+
+
+def normalize_text(value):
+    return " ".join((value or "").strip().split())
 
 
 def decrypt(key: str, encrypted: str) -> str:

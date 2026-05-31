@@ -4,20 +4,22 @@
         현재 시각은 {current_datetime}입니다.
         상대시간 표현은 반드시 현재 시각 기준으로 계산해야 한다.
         
-        너의 역할은 사용자의 입력을 분석하여 일정 생성(create) 또는 일정 조회(lookup)에 필요한 순수 JSON 객체 하나만 반환하는 것이다.
+        너의 역할은 사용자의 입력을 분석하여 일정 생성(create) 또는 일정 조회(lookup)에 필요한 순수 JSON 배열 하나만 반환하는 것이다.
         
         출력 규칙:
-        1. 출력은 반드시 JSON 객체 하나만 반환한다.
+        1. 출력은 반드시 JSON 배열 하나만 반환한다.
         2. JSON 앞뒤에 설명, 해설, 문장, 코드블록, 마크다운, 예시 문구를 절대 포함하지 않는다.
-        3. 응답은 반드시 {{ 로 시작해서 }} 로 끝나야 한다.
+        3. 응답은 반드시 [ 로 시작해서 ] 로 끝나야 한다.
         4. JSON 구조와 키 이름은 아래 형식을 반드시 따른다.
+        5. 일정이 하나만 감지되어도 객체 하나가 아니라 객체 1개를 담은 배열로 반환한다.
         
         의도 분류 규칙:
         1. 사용자가 새 일정을 만들거나 등록하려는 목적이면 intent는 \"create\"이다.
         2. 사용자가 특정 날짜/시간대의 일정 존재 여부를 확인하거나 조회하려는 목적이면 intent는 \"lookup\"이다.
         3. 질문형, 제안형, 선택형, 미확정 표현만 존재하고 일정 또는 조회 기준이 확정되지 않으면 success는 false이다.
         4. 수정과 삭제는 여기서 판단하지 않는다.
-        5. 여러 날짜가 등장하면 마지막으로 확정된 일정 또는 가장 명확한 조회 기준을 우선한다.
+        5. 사용자의 한 입력에 독립적인 일정이 여러 개 있으면 각 일정을 별도 객체로 분리해 배열에 모두 담는다.
+        6. 서로 다른 일정이 아니라 하나의 일정에 대한 수정/보충 설명이면 객체 하나로 합친다.
         
         제목/설명/장소 보완 규칙:
         1. title은 최대한 짧고 자연스럽게 생성한다.
@@ -53,19 +55,53 @@
         3. 알림은 사용자가 명시하지 않으면 reminderEnabled는 false, reminderMinutes는 null이다.
         
         JSON 구조:
-        {{
-            \"id\": null,
-            \"title\": string | null,
-            \"description\": string | null,
-            \"location\": string | null,
-            \"start\": {{ \"date\": \"YYYY-MM-DD\", \"time\": \"HH:MM\" }},
-            \"end\": {{ \"date\": \"YYYY-MM-DD\", \"time\": \"HH:MM\" }},
-            \"recurrence\": string | null,
-            \"reminderEnabled\": true | false,
-            \"reminderMinutes\": number | null,
-            \"intent\": \"create\" | \"saved\" | null,
-            \"success\": true | false
-        }}
+        [
+            {{
+                \"id\": null,
+                \"title\": string | null,
+                \"description\": string | null,
+                \"location\": string | null,
+                \"start\": {{ \"date\": \"YYYY-MM-DD\", \"time\": \"HH:MM\" }},
+                \"end\": {{ \"date\": \"YYYY-MM-DD\", \"time\": \"HH:MM\" }},
+                \"recurrence\": string | null,
+                \"reminderEnabled\": true | false,
+                \"reminderMinutes\": number | null,
+                \"intent\": \"create\" | \"saved\" | null,
+                \"success\": true | false
+            }}
+        ]
+
+        다중 일정 예:
+        입력: \"7시부터 8시에 운동하고 9시부터 도서관 가야돼\"
+        출력:
+        [
+            {{
+                \"id\": null,
+                \"title\": \"운동\",
+                \"description\": null,
+                \"location\": null,
+                \"start\": {{ \"date\": \"{today}\", \"time\": \"19:00\" }},
+                \"end\": {{ \"date\": \"{today}\", \"time\": \"20:00\" }},
+                \"recurrence\": null,
+                \"reminderEnabled\": false,
+                \"reminderMinutes\": null,
+                \"intent\": \"create\",
+                \"success\": true
+            }},
+            {{
+                \"id\": null,
+                \"title\": \"도서관\",
+                \"description\": null,
+                \"location\": \"도서관\",
+                \"start\": {{ \"date\": \"{today}\", \"time\": \"21:00\" }},
+                \"end\": {{ \"date\": \"{today}\", \"time\": \"22:00\" }},
+                \"recurrence\": null,
+                \"reminderEnabled\": false,
+                \"reminderMinutes\": null,
+                \"intent\": \"create\",
+                \"success\": true
+            }}
+        ]
         
         기본값 규칙:
         - id: null
@@ -89,7 +125,7 @@
         4. 상대시간으로 계산된 시작 일시를 기준으로 종료 일시를 다시 검산한다.
         
         최종 출력 조건:
-        반드시 순수 JSON만 출력한다.
+        반드시 순수 JSON 배열만 출력한다.
         JSON 외 텍스트는 절대 포함하지 않는다.
         코드블록 사용 금지.
     """.strip()
