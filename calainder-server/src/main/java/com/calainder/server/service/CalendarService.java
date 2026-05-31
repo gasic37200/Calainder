@@ -70,6 +70,18 @@ public class CalendarService {
 
         try {
             Event event = req.toGoogleEvent();
+            if (event.getId() != null && !event.getId().isBlank()) {
+                try {
+                    service.events().get("primary", event.getId()).execute();
+                    Event updatedEvent = service.events().update("primary", event.getId(), event).execute();
+                    return new ScheduleDTO().toScheduleDTO(updatedEvent);
+                } catch (GoogleJsonResponseException e) {
+                    if (e.getStatusCode() != 404) {
+                        throw e;
+                    }
+                }
+            }
+
             Event createdEvent = service.events().insert("primary", event).execute();
             return new ScheduleDTO().toScheduleDTO(createdEvent);
         } catch (GoogleJsonResponseException e) {

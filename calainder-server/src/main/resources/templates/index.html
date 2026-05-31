@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calainder</title>
     <link rel="stylesheet" href="/css/index.css">
+    <link rel="stylesheet" href="/css/feedback-widget.css">
 </head>
 
 <!--전체 화면 고정(100%)-->
@@ -71,16 +72,24 @@
 </section>
 
 <!--퀵메뉴-->
-    <div id="quickMenu" class="quick-menu" hidden>
-        <div id="quickMenuPanel" class="quick-menu__panel" hidden>
-            <button id="openGoogleCalendarButton" type="button" class="quick-menu__item">내 구글 캘린더로 이동</button>
-            <button id="crawlLoginButton" type="button" class="quick-menu__item">과제 일정 가져오기</button>
-        </div>
-        <button id="quickMenuButton" type="button" class="quick-menu__trigger" aria-label="추가 기능 열기" aria-expanded="false">☰</button>
+<div id="quickMenu" class="quick-menu" hidden>
+    <div id="quickMenuPanel" class="quick-menu__panel" hidden>
+        <button id="openGoogleCalendarButton" type="button" class="quick-menu__item">내 구글 캘린더로 이동</button>
+        <button id="crawlLoginButton" type="button" class="quick-menu__item">과제 일정 가져오기</button>
+        <button id="feedbackButton" type="button" class="quick-menu__item">피드백 남기기</button>
+    </div>
+    <button id="quickMenuButton" type="button" class="quick-menu__trigger" aria-label="추가 기능 열기" aria-expanded="false">☰</button>
 </div>
 
 <div id="appToast" class="app-toast"></div>
 
 <script type="module" src="/js/index.js"></script>
+<script>
+    window.FeedbackWidgetConfig = {
+        endpoint: '/api/feedback',
+        buttonSelector: '#feedbackButton'
+    };
+</script>
+<script src="/js/feedback-widget.js"></script>
 </body>
 </html>
