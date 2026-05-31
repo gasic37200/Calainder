@@ -1,0 +1,14 @@
+.env
+.venv/
+venv/
+ENV/
+env/
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.idea/
+.vscode/
+.git/
+*.log
+mjc_state.json
+storage_state*.json
