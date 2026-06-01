@@ -34,6 +34,8 @@ public class ScheduleDTO {
 
     // RRULE 문자열. 반복 일정이 아니면 null
     private String recurrence;
+    private String recurringEventId;
+    private String updateScope;
 
     // 프런트에서 사용하는 단순한 알림 표현
     // 기본값 표시는 프런트에서 처리하고, 서버는 사실값만 가진다.
@@ -52,9 +54,10 @@ public class ScheduleDTO {
         this.setLocation(event.getLocation());
         this.setStart(convertEventDateTime(event.getStart()));
         this.setEnd(convertEventDateTime(event.getEnd()));
+        this.setRecurringEventId(event.getRecurringEventId());
 
         if (event.getRecurrence() != null && !event.getRecurrence().isEmpty()) {
-            this.setRecurrence(event.getRecurrence().get(0));
+            this.setRecurrence(stripRrulePrefix(event.getRecurrence().get(0)));
         }
 
         toReminderFields(event);
@@ -80,8 +83,8 @@ public class ScheduleDTO {
             event.setEnd(end);
         }
 
-        if (this.getRecurrence() != null) {
-            event.setRecurrence(Collections.singletonList(this.getRecurrence()));
+        if (this.getRecurrence() != null && !this.getRecurrence().isBlank()) {
+            event.setRecurrence(Collections.singletonList(addRrulePrefix(this.getRecurrence())));
         }
 
         event.setReminders(toEventReminders());
@@ -185,5 +188,13 @@ public class ScheduleDTO {
         }
 
         return edt;
+    }
+
+    private String addRrulePrefix(String recurrence) {
+        return recurrence.startsWith("RRULE:") ? recurrence : "RRULE:" + recurrence;
+    }
+
+    private String stripRrulePrefix(String recurrence) {
+        return recurrence.startsWith("RRULE:") ? recurrence.substring("RRULE:".length()) : recurrence;
     }
 }

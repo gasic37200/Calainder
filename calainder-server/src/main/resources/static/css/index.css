@@ -170,7 +170,9 @@
 
 .schedule-card__input,
 .schedule-card__datetime-editor,
-.schedule-card__reminder-editor {
+.schedule-card__reminder-editor,
+.schedule-card__recurrence-editor,
+.schedule-card__field--update-scope {
     display: none;
 }
 
@@ -183,8 +185,13 @@
 }
 
 .schedule-card--editing .schedule-card__datetime-editor,
-.schedule-card--editing .schedule-card__reminder-editor {
+.schedule-card--editing .schedule-card__reminder-editor,
+.schedule-card--editing .schedule-card__recurrence-editor {
     display: flex;
+}
+
+.schedule-card--editing .schedule-card__field--update-scope {
+    display: grid;
 }
 
 .schedule-card__input {
@@ -212,7 +219,8 @@
 
 .schedule-card__reminder-editor {
     width: 100%;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     justify-content: flex-start;
     gap: 12px;
 }
@@ -279,7 +287,7 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    margin-left: auto;
+    margin-left: 0;
 }
 
 .schedule-card__minutes[hidden] {
@@ -293,6 +301,101 @@
 .schedule-card__minutes-label {
     font-size: 14px;
     color: #4b5563;
+}
+
+.schedule-card__recurrence-editor,
+.schedule-card__recurrence-options {
+    width: 100%;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.schedule-card__recurrence-options {
+    display: flex;
+}
+
+.schedule-card__recurrence-options[hidden] {
+    display: none;
+}
+
+.schedule-card__recurrence-editor--disabled {
+    opacity: 0.55;
+}
+
+.schedule-card__recurrence-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    color: #4b5563;
+}
+
+.schedule-card__recurrence-row[hidden] {
+    display: none;
+}
+
+.schedule-card__input--recurrence {
+    width: auto;
+    min-width: 96px;
+}
+
+.schedule-card__input--month-day {
+    width: min(180px, 100%);
+}
+
+.schedule-card__weekdays {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.schedule-card__weekday {
+    position: relative;
+    display: inline-flex;
+}
+
+.schedule-card__weekday input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+.schedule-card__weekday span {
+    display: inline-flex;
+    width: 30px;
+    height: 30px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid #d1d5db;
+    border-radius: 999px;
+    background: #ffffff;
+    color: #4b5563;
+    font-size: 13px;
+    cursor: pointer;
+}
+
+.schedule-card__weekday input:checked + span {
+    border-color: #111827;
+    background: #111827;
+    color: #ffffff;
+}
+
+.schedule-card__scope-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.schedule-card__scope-options label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    cursor: pointer;
 }
 
 .schedule-card__actions {
