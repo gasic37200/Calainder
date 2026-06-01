@@ -9,7 +9,7 @@ Google Calendar에 반영하는 스마트 일정 관리 서비스
 
 [![Service](https://img.shields.io/badge/Service-calainder.kr-2563EB?style=for-the-badge)](https://calainder.kr)
 [![Portfolio](https://img.shields.io/badge/Portfolio-Notion-000000?style=for-the-badge&logo=notion)](https://www.notion.so/33c49c16438d80bda22ac562b87e84e4)
-[![Release](https://img.shields.io/badge/Release-v1.5.0-10B981?style=for-the-badge)](https://github.com/gasic37200/Calainder)
+[![Release](https://img.shields.io/badge/Release-v1.5.2-10B981?style=for-the-badge)](https://github.com/gasic37200/Calainder)
 
 </div>
 
@@ -34,7 +34,7 @@ Calainder는 일정 정보를 다시 정리하고 직접 입력해야 하는 번
 | Google Calendar 연동 | Google OAuth2 인증을 통해 일정 등록, 조회, 수정, 삭제를 처리합니다. |
 | E-Class 과제 동기화 | 학교 과제를 수집하여 Google Calendar에 반영합니다. |
 | 중복 일정 방지 | 과목명과 일정 제목을 기반으로 고정 ID를 생성하여 기존 일정을 갱신합니다. |
-| 피드백 수집 | 공용 Feedback API를 통해 사용자 피드백을 저장하고 조회합니다. |
+| 피드백 수집 | Google 로그인 사용자의 피드백을 공용 Feedback API를 통해 저장하고 조회합니다. |
 
 ### 사용 예시
 
@@ -225,17 +225,17 @@ Calainder/
 
 ## Release Notes
 
-### `v1.5.0`
+### `v1.5.2`
 
-- 매일, 매주, 매달 반복 일정 생성 및 조회 기능을 추가했습니다.
-- 반복 일정 수정 시 특정 일정만 수정하거나 전체 반복 일정을 변경할 수 있도록 수정 범위를 분리했습니다.
-- 반복 일정 및 알림 설정 UI를 정리하고, 요일 선택 시 화면이 이동하던 문제를 수정했습니다.
+- 로그인하지 않은 사용자가 피드백 기능에 접근하면 Google 로그인 페이지로 이동하도록 개선했습니다.
 
 <details>
 <summary>이전 버전 보기</summary>
 
 | 버전 | 주요 변경 사항 |
 |---|---|
+| `v1.5.1` | FastAPI 모듈의 Uvicorn 선택 의존성 정리 |
+| `v1.5.0` | 반복 일정 생성·조회, 특정 일정 또는 전체 반복 일정 수정, 반복 및 알림 설정 UI 개선 |
 | `v1.4.1` | Docker 이미지에 불필요한 파일이 포함되지 않도록 모듈별 `.dockerignore` 추가 |
 | `v1.4.0` | AI 다중 일정 추출, E-Class 일정 중복 방지, 공용 피드백 API 연동, 모듈별 `.env` 기반 Docker Compose 구성 |
 | `v1.3.0` | 일정 조회·수정 UX 개선, 리마인더 설정 흐름 정리, Google Calendar 연동 안정화 |

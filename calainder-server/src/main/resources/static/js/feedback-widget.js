@@ -77,10 +77,13 @@
         }
 
         async function open() {
-            backdrop.classList.add('is-open');
             message.textContent = '';
             emailMessage.textContent = '';
-            await loadFeedback();
+
+            const shouldOpen = await loadFeedback();
+            if (shouldOpen) {
+                backdrop.classList.add('is-open');
+            }
         }
 
         function close() {
@@ -118,7 +121,12 @@
                 });
 
                 if (response.status === 404 || response.status === 204) {
-                    return;
+                    return true;
+                }
+
+                if (response.status === 401) {
+                    window.location.href = '/oauth2/authorization/google';
+                    return false;
                 }
 
                 if (!response.ok) {
@@ -127,15 +135,17 @@
 
                 const feedback = await response.json();
                 if (!feedback) {
-                    return;
+                    return true;
                 }
 
                 emailInput.value = feedback.email || emailInput.value || '';
                 form.elements.positive.value = feedback.positive || '';
                 form.elements.improvement.value = feedback.improvement || '';
                 setRating(Number(feedback.rating || 0));
+                return true;
             } catch (error) {
                 message.textContent = error.message || '기존 피드백을 불러오지 못했습니다.';
+                return true;
             }
         }
 
@@ -203,6 +213,12 @@
                     },
                     body: JSON.stringify(payload)
                 });
+
+                if (response.status === 401) {
+                    close();
+                    window.location.href = '/oauth2/authorization/google';
+                    return;
+                }
 
                 if (!response.ok) {
                     throw new Error(await readErrorMessage(response));
