@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.util.Collections;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -48,6 +49,33 @@ class ScheduleDTOTest {
 		assertThat(event.getReminders().getOverrides()).hasSize(1);
 		assertThat(event.getReminders().getOverrides().get(0).getMethod()).isEqualTo("popup");
 		assertThat(event.getReminders().getOverrides().get(0).getMinutes()).isEqualTo(30);
+	}
+
+	@Test
+	void toGoogleEvent_addsRrulePrefixToRecurrence() {
+		ScheduleDTO dto = new ScheduleDTO();
+		dto.setTitle("Running");
+		dto.setStart(scheduleDateTime(LocalDate.of(2026, 6, 1), LocalTime.of(9, 0)));
+		dto.setEnd(scheduleDateTime(LocalDate.of(2026, 6, 1), LocalTime.of(10, 0)));
+		dto.setRecurrence("FREQ=WEEKLY;BYDAY=MO");
+		dto.setReminderEnabled(false);
+
+		Event event = dto.toGoogleEvent();
+
+		assertThat(event.getRecurrence()).containsExactly("RRULE:FREQ=WEEKLY;BYDAY=MO");
+	}
+
+	@Test
+	void toScheduleDTO_stripsRrulePrefixAndMapsRecurringEventId() {
+		Event event = new Event();
+		event.setSummary("Running");
+		event.setRecurrence(Collections.singletonList("RRULE:FREQ=WEEKLY;BYDAY=MO"));
+		event.setRecurringEventId("recurring-event-id");
+
+		ScheduleDTO dto = new ScheduleDTO().toScheduleDTO(event);
+
+		assertThat(dto.getRecurrence()).isEqualTo("FREQ=WEEKLY;BYDAY=MO");
+		assertThat(dto.getRecurringEventId()).isEqualTo("recurring-event-id");
 	}
 
 	private ScheduleDateTime scheduleDateTime(LocalDate date, LocalTime time) {

@@ -42,17 +42,20 @@
             - start가 2026-05-19 22:48이면 end는 2026-05-19 23:48이다.
             - start가 2026-05-19 23:48이면 end는 2026-05-20 00:48이다.
         11. 종료 일시는 항상 시작 일시보다 늦거나 같아야 한다.
-        12. intent가 \"saved\"이고 날짜만 주어진 경우 조회 범위는 00:00부터 23:59까지로 설정한다.
-        13. intent가 \"saved\"이고 날짜와 시간까지 명확히 지정된 경우에만 그 시간 기준 범위를 사용한다.
+        12. intent가 \"lookup\"이고 날짜만 주어진 경우 조회 범위는 00:00부터 23:59까지로 설정한다.
+        13. intent가 \"lookup\"이고 날짜와 시간까지 명확히 지정된 경우에만 그 시간 기준 범위를 사용한다.
+        14. intent가 \"lookup\"이고 \"매일\", \"매주\", \"매달\"처럼 반복 조건은 있지만 조회 기간이 없다면 오늘 00:00부터 28일 뒤 23:59까지 조회한다.
         
         success 판단 규칙:
-        1. 일정 생성(create)이든 일정 조회(saved)이든 유효한 날짜/시간 기준이 충분히 해석되면 success는 true이다.
+        1. 일정 생성(create)이든 일정 조회(lookup)이든 유효한 날짜/시간 기준이 충분히 해석되면 success는 true이다.
         2. 아무것도 확정되지 않았거나 조회 기준이 불명확하면 success는 false이다.
         
         반복 및 알림 규칙:
         1. 반복 규칙은 사용자가 명확하게 언급한 경우에만 recurrence를 설정한다.
-        2. 예: 매주 월요일, 매달 첫째 주
-        3. 알림은 사용자가 명시하지 않으면 reminderEnabled는 false, reminderMinutes는 null이다.
+        2. 반복 규칙은 반드시 RRULE 접두사 없이 RFC 5545 형식으로 반환한다.
+        3. 매일은 \"FREQ=DAILY\", 매주 월요일과 화요일은 \"FREQ=WEEKLY;BYDAY=MO,TU\", 매달 1일과 15일은 \"FREQ=MONTHLY;BYMONTHDAY=1,15\" 형식이다.
+        4. intent가 \"lookup\"인 경우 recurrence는 생성할 반복 일정이 아니라 조회 결과를 거를 조건이다.
+        5. 알림은 사용자가 명시하지 않으면 reminderEnabled는 false, reminderMinutes는 null이다.
         
         JSON 구조:
         [
@@ -66,7 +69,7 @@
                 \"recurrence\": string | null,
                 \"reminderEnabled\": true | false,
                 \"reminderMinutes\": number | null,
-                \"intent\": \"create\" | \"saved\" | null,
+                \"intent\": \"create\" | \"lookup\" | null,
                 \"success\": true | false
             }}
         ]

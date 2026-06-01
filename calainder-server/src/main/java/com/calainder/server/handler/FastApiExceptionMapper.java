@@ -17,14 +17,6 @@ public final class FastApiExceptionMapper {
         this.objectMapper = objectMapper;
     }
 
-	// UnauthorizedException
-	// → 사용자가 다시 로그인해야 하는 인증 문제
-
-	// IllegalArgumentException
-	// → 요청값, 권한, 리소스 등 클라이언트 쪽 문제
-
-	// IllegalStateException
-	// → 외부 API 장애나 서버 상태 문제
     public RuntimeException toException(HttpStatusCodeException exception, String fallbackMessage) {
         String message = extractMessage(exception, fallbackMessage);
 
