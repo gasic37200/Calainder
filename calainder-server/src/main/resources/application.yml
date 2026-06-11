@@ -23,7 +23,7 @@ feedback:
   base-url: ${FEEDBACK_API_BASE_URL:http://localhost:7000}
 
 aes:
-    key: ${AES_KEY}
+  key: ${AES_KEY}
 
 server:
   port: 8888

@@ -125,6 +125,7 @@
                 }
 
                 if (response.status === 401) {
+                    alert("구글 로그인이 필요합니다.")
                     window.location.href = '/oauth2/authorization/google';
                     return false;
                 }

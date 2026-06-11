@@ -11,6 +11,13 @@
 <!--전체 화면 고정(100%)-->
 <body class="app-shell">
 
+<nav class="app-auth" aria-label="계정">
+    <a id="loginLink" class="app-auth__link" href="/oauth2/authorization/google" hidden>로그인</a>
+    <form id="logoutForm" action="/logout" method="post" hidden>
+        <button class="app-auth__link" type="submit">로그아웃</button>
+    </form>
+</nav>
+
 <!--스플래쉬 화면-->
 <section id="appLanding" class="app-splash">
     <h1 class="app-splash__title">Calainder</h1>
@@ -84,6 +91,7 @@
 <div id="appToast" class="app-toast"></div>
 
 <script type="module" src="/js/index.js"></script>
+<script type="module" src="/js/auth-status.js"></script>
 <script>
     window.FeedbackWidgetConfig = {
         endpoint: '/api/feedback',

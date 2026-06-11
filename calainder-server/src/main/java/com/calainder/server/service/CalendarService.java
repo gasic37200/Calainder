@@ -42,7 +42,7 @@ public class CalendarService {
                 .build();
     }
 
-    public List<ScheduleDTO> lookupEvent(ScheduleDTO req, OAuth2AuthorizedClient authorizedClient) throws Exception {
+    public List<ScheduleDTO> searchEvents(ScheduleDTO req, OAuth2AuthorizedClient authorizedClient) throws Exception {
         Calendar service = getCalendarService(authorizedClient);
 
         try {

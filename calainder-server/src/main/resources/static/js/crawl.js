@@ -74,7 +74,7 @@ export async function handleCrawlLoginSubmit(event) {
     const statusMessage = addChatMessage('학교 일정을 가져오고 있습니다...', 'ai');
 
     try {
-        const response = await fetch('/api/crawl/schedule', {
+        const response = await fetch('/api/school-schedules/imports', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

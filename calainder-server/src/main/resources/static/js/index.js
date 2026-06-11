@@ -37,7 +37,7 @@ let isAiRequesting = false; // AI 요청 중 중복 전송 방지
 ========================= */
 
 async function lookupSchedules(schedule, statusMessage = null) {
-    const response = await fetch('/api/calendar/lookup', {
+    const response = await fetch('/api/calendar/events/search', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(schedule),
@@ -128,7 +128,7 @@ async function requestScheduleAnalysis() {
     clearAttachment();
 
     try {
-        const response = await fetch('/api/ai/schedule', {
+        const response = await fetch('/api/schedules/analysis', {
             method: 'POST',
             credentials: 'include',
             body: formData
@@ -230,7 +230,8 @@ async function saveCardEdit(card) {
     }
 
     try {
-        const response = await fetch('/api/calendar/events', {
+        const eventUrl = nextSchedule.id ? `/api/calendar/events/${nextSchedule.id}` : '/api/calendar/events';
+        const response = await fetch(eventUrl, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(nextSchedule),
