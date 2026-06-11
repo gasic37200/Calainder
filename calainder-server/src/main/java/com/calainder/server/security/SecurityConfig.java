@@ -18,8 +18,9 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/", "/login/**", "/privacy", "/terms", "/oauth2/**", "/css/**", "/js/**", "/images/**").permitAll()
-                        .requestMatchers("/api/ai/schedule").permitAll()
+                        .requestMatchers("/", "/prompt", "/login/**", "/privacy", "/terms", "/oauth2/**", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/api/schedules/analysis", "/api/ai/schedule").permitAll()
+                        .requestMatchers("/api/auth/status").permitAll()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().authenticated()
                 )
@@ -35,6 +36,9 @@ public class SecurityConfig {
                 )
                 .oauth2Login(oauth -> oauth
                         .defaultSuccessUrl("/", true)
+                )
+                .logout(logout -> logout
+                        .logoutSuccessUrl("/")
                 );
 
         return http.build();

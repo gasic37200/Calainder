@@ -34,8 +34,11 @@ public class CrawlController {
     @Value("${aes.key}")
     private String aesKey;
 
-    @PostMapping(value = "/api/crawl/schedule", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter crawlSchedule(
+    @PostMapping(
+            value = {"/api/school-schedules/imports", "/api/crawl/schedule"},
+            produces = MediaType.TEXT_EVENT_STREAM_VALUE
+    )
+    public SseEmitter importSchoolSchedules(
             @RequestBody Map<String, String> body,
             @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient
     ) {
@@ -61,7 +64,7 @@ public class CrawlController {
                         "일정을 확인하고 있습니다."
                 ));
 
-                ScheduleDTO[] schedules = scheduleService.crawlSchedule(data);
+                ScheduleDTO[] schedules = scheduleService.importSchoolSchedules(data);
                 crawlFinished.set(true);
 
                 sendEvent(

@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 @RequiredArgsConstructor
 public class CommonController {
 
-	@GetMapping("/prompt")
+	@GetMapping({"/", "/prompt"})
 	public String prompt() {
 		return "index";
 	}

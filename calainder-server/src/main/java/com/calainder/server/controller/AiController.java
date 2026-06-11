@@ -16,8 +16,11 @@ import java.util.List;
 public class AiController {
     private final ScheduleService scheduleService;
 
-    @PostMapping(value = "/api/ai/schedule", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public List<ScheduleDTO> createSchedule(
+    @PostMapping(
+            value = {"/api/schedules/analysis", "/api/ai/schedule"},
+            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public List<ScheduleDTO> analyzeSchedules(
             @RequestPart(required = false) String prompt,
             @RequestPart(required = false) MultipartFile image
     ) {

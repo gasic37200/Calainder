@@ -17,23 +17,27 @@ public class CalendarController {
 
     private final CalendarService calendarService;
 
-    @PostMapping("/api/calendar/lookup")
-    public List<ScheduleDTO> lookupEvent(@RequestBody ScheduleDTO req,
-                                         @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
-        return calendarService.lookupEvent(req, authorizedClient);
+    @PostMapping({"/api/calendar/events/search", "/api/calendar/lookup"})
+    public List<ScheduleDTO> searchEvents(@RequestBody ScheduleDTO req,
+                                          @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
+        return calendarService.searchEvents(req, authorizedClient);
     }
 
     @PostMapping("/api/calendar/events")
     public ScheduleDTO addEvent(@RequestBody ScheduleDTO req,
-                                        @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
-		return calendarService.addEvent(req, authorizedClient);
+                                @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
+        return calendarService.addEvent(req, authorizedClient);
     }
 
-    @PatchMapping("/api/calendar/events")
-	public ScheduleDTO updateEvent(@RequestBody ScheduleDTO req,
-							   @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
-		return calendarService.updateEvent(req, authorizedClient);
-	}
+    @PatchMapping({"/api/calendar/events/{id}", "/api/calendar/events"})
+    public ScheduleDTO updateEvent(@PathVariable(value = "id", required = false) String id,
+                                   @RequestBody ScheduleDTO req,
+                                   @RegisteredOAuth2AuthorizedClient("google") OAuth2AuthorizedClient authorizedClient) throws Exception {
+        if (id != null && !id.isBlank()) {
+            req.setId(id);
+        }
+        return calendarService.updateEvent(req, authorizedClient);
+    }
 
     @DeleteMapping("/api/calendar/events/{id}")
     public ResponseEntity<Map<String, Object>> deleteEvent(@PathVariable("id") String id,

@@ -37,7 +37,7 @@ public class ScheduleService {
         throw new IllegalArgumentException("일정 내용이나 이미지를 입력해주세요.");
     }
 
-    public ScheduleDTO[] crawlSchedule(Map<String, Object> data) {
+    public ScheduleDTO[] importSchoolSchedules(Map<String, Object> data) {
         return crawlScheduleClient.fetchSchedule(data);
     }
 
